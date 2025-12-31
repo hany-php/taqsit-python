@@ -1,0 +1,186 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<button class="btn btn-primary" onclick="openModal('addModal')">
+    <span class="material-icons-round">add</span>
+    إضافة تصنيف
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="search-input">
+            <span class="material-icons-round">search</span>
+            <input type="text" name="q" value="{{ search }}" placeholder="بحث في التصنيفات...">
+        </div>
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if categories %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>التصنيف</th>
+                    <th>الوصف</th>
+                    <th>عدد المنتجات</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in categories %}
+                <tr>
+                    <td>{{ cat.id }}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; background: {{ cat.color }}; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons-round" style="color: white;">{{ cat.icon or 'category' }}</span>
+                            </div>
+                            <strong>{{ cat.name }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ cat.description or '-' }}</td>
+                    <td>{{ cat.products_count }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('categories.show', id=cat.id) }}" class="btn btn-sm btn-secondary" title="عرض المنتجات">
+                                <span class="material-icons-round">visibility</span>
+                            </a>
+                            <button class="btn btn-sm btn-primary" onclick="editCategory({{ cat.to_dict() | tojson }})" title="تعديل">
+                                <span class="material-icons-round">edit</span>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ cat.id }}, '{{ cat.name }}')" title="حذف">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">category</span>
+            <h3>لا توجد تصنيفات</h3>
+            <p>ابدأ بإضافة تصنيفاتك الأولى</p>
+            <button class="btn btn-primary" onclick="openModal('addModal')">
+                <span class="material-icons-round">add</span>
+                إضافة تصنيف
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal إضافة/تعديل -->
+<div class="modal" id="addModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">إضافة تصنيف</h3>
+            <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
+        </div>
+        <form id="categoryForm" method="POST" action="{{ url_for('categories.store') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="id" id="categoryId">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم التصنيف <span class="required">*</span></label>
+                    <input type="text" name="name" id="categoryName" required>
+                </div>
+                <div class="form-group">
+                    <label>الوصف</label>
+                    <textarea name="description" id="categoryDesc" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>الأيقونة (Material Icon)</label>
+                    <input type="text" name="icon" id="categoryIcon" placeholder="مثال: shopping_cart">
+                </div>
+                <div class="form-group">
+                    <label>اللون</label>
+                    <input type="color" name="color" id="categoryColor" value="#1e88e5">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">إلغاء</button>
+                <button type="submit" class="btn btn-primary">حفظ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal حذف -->
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>تأكيد الحذف</h3>
+            <button class="close-modal" onclick="closeModal('deleteModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>هل أنت متأكد من حذف التصنيف <strong id="deleteCategoryName"></strong>؟</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">إلغاء</button>
+            <form id="deleteForm" method="POST" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">حذف</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editCategory(cat) {
+    document.getElementById('modalTitle').textContent = 'تعديل التصنيف';
+    document.getElementById('categoryId').value = cat.id;
+    document.getElementById('categoryName').value = cat.name;
+    document.getElementById('categoryDesc').value = cat.description || '';
+    document.getElementById('categoryIcon').value = cat.icon || '';
+    document.getElementById('categoryColor').value = cat.color || '#1e88e5';
+    openModal('addModal');
+}
+
+function confirmDelete(id, name) {
+    document.getElementById('deleteCategoryName').textContent = name;
+    document.getElementById('deleteForm').action = '/categories/' + id + '/delete';
+    openModal('deleteModal');
+}
+
+// Reset form on open
+document.querySelector('[onclick="openModal(\'addModal\')"]')?.addEventListener('click', function() {
+    document.getElementById('modalTitle').textContent = 'إضافة تصنيف';
+    document.getElementById('categoryForm').reset();
+    document.getElementById('categoryId').value = '';
+});
+
+// AJAX submit
+document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        const formData = new FormData(this);
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', data.message);
+            closeModal('addModal');
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">
+            <span class="material-icons-round">inventory</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">قيمة المخزون</span>
+            <span class="stat-value">{{ format_money(total_value) }}</span>
+            <span class="stat-sub">{{ products | length }} منتج</span>
+        </div>
+    </div>
+    
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">
+            <span class="material-icons-round">error_outline</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">منتجات منخفضة</span>
+            <span class="stat-value">{{ low_stock | length }}</span>
+            <span class="stat-sub">تحتاج إعادة طلب</span>
+        </div>
+    </div>
+</div>
+
+{% if low_stock %}
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <h3><span class="material-icons-round">warning</span> منتجات تحتاج إعادة طلب</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>المنتج</th>
+                    <th>الكمية الحالية</th>
+                    <th>الحد الأدنى</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in low_stock %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td class="text-danger">{{ p.quantity }}</td>
+                    <td>{{ p.min_quantity }}</td>
+                    <td>
+                        <a href="{{ url_for('products.edit', id=p.id) }}" class="btn btn-sm btn-primary">تعديل الكمية</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h3><span class="material-icons-round">list</span> جميع المنتجات</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>المنتج</th>
+                    <th>التصنيف</th>
+                    <th>الكمية</th>
+                    <th>سعر التكلفة</th>
+                    <th>قيمة المخزون</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.category.name if p.category else '-' }}</td>
+                    <td class="{% if p.is_low_stock %}text-danger{% endif %}">{{ p.quantity }}</td>
+                    <td>{{ format_money(p.cost_price) }}</td>
+                    <td>{{ format_money((p.cost_price or 0) * p.quantity) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background: var(--light);">
+                    <td colspan="4">إجمالي قيمة المخزون</td>
+                    <td>{{ format_money(total_value) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

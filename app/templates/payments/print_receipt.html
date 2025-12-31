@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إيصال {{ payment.receipt_number }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: white;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .receipt {
+            border: 2px solid #333;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #333;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .receipt-number {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .details {
+            margin: 20px 0;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dotted #ddd;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-row .label {
+            color: #666;
+        }
+        
+        .detail-row .value {
+            font-weight: 600;
+        }
+        
+        .amount-section {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #1e88e5;
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .amount-section .label {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .amount-section .amount {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px dashed #333;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .qr-placeholder {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="header">
+            <h1>{{ settings.store_name|default('نظام تقسيط') }}</h1>
+            <div class="subtitle">{{ settings.store_address|default('') }}</div>
+            <div class="subtitle">{{ settings.store_phone|default('') }}</div>
+        </div>
+        
+        <div class="receipt-number">
+            إيصال رقم: {{ payment.receipt_number }}
+        </div>
+        
+        <div class="details">
+            <div class="detail-row">
+                <span class="label">التاريخ:</span>
+                <span class="value">{{ payment.payment_date.strftime('%Y-%m-%d %H:%M') if payment.payment_date else '' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">رقم الفاتورة:</span>
+                <span class="value">{{ payment.invoice.invoice_number }}</span>
+            </div>
+            {% if payment.invoice.customer %}
+            <div class="detail-row">
+                <span class="label">العميل:</span>
+                <span class="value">{{ payment.invoice.customer.full_name }}</span>
+            </div>
+            {% endif %}
+            <div class="detail-row">
+                <span class="label">طريقة الدفع:</span>
+                <span class="value">{{ payment.get_method_label() }}</span>
+            </div>
+            {% if payment.user %}
+            <div class="detail-row">
+                <span class="label">الموظف:</span>
+                <span class="value">{{ payment.user.full_name }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="amount-section">
+            <div class="label">المبلغ المدفوع</div>
+            <div class="amount">{{ "%.2f"|format(payment.amount|float) }} ج.م</div>
+        </div>
+        
+        {% if payment.notes %}
+        <div class="details">
+            <div class="detail-row">
+                <span class="label">ملاحظات:</span>
+                <span class="value">{{ payment.notes }}</span>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="footer">
+            <p>شكراً لتعاملكم معنا</p>
+            <p>{{ payment.created_at.strftime('%Y-%m-%d %H:%M:%S') if payment.created_at else '' }}</p>
+        </div>
+    </div>
+    
+    <div class="no-print" style="text-align: center; margin-top: 20px;">
+        <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; cursor: pointer;">
+            طباعة
+        </button>
+    </div>
+    
+    <script>
+        // طباعة تلقائية عند فتح الصفحة
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>

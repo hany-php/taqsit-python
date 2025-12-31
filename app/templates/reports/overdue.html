@@ -1,0 +1,108 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card stat-danger">
+        <div class="stat-icon">
+            <span class="material-icons-round">warning</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">إجمالي المتأخرات</span>
+            <span class="stat-value">{{ format_money(total_overdue) }}</span>
+            <span class="stat-sub">{{ total_customers }} عميل</span>
+        </div>
+    </div>
+</div>
+
+{% if customers_data %}
+<div class="card-header-info" style="margin-bottom: 15px; color: var(--muted);">
+    عرض {{ customers_data|length }} من {{ total_customers }} عميل
+</div>
+
+{% for data in customers_data %}
+<div class="card" style="margin-bottom: 15px;">
+    <div class="card-header">
+        <h3>
+            <a href="{{ url_for('customers.show', id=data.customer.id) }}">
+                <span class="material-icons-round">person</span>
+                {{ data.customer.full_name }}
+            </a>
+        </h3>
+        <span class="badge badge-danger">{{ format_money(data.total) }}</span>
+    </div>
+    <div class="card-body">
+        <div class="details-grid" style="margin-bottom: 15px;">
+            <div class="detail-item">
+                <span class="detail-label">الهاتف</span>
+                <span class="detail-value">{{ data.customer.phone }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">العنوان</span>
+                <span class="detail-value">{{ data.customer.address or '-' }}</span>
+            </div>
+        </div>
+        
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>الفاتورة</th>
+                    <th>رقم القسط</th>
+                    <th>المبلغ</th>
+                    <th>تاريخ الاستحقاق</th>
+                    <th>أيام التأخير</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inst in data.installments %}
+                <tr>
+                    <td><a href="{{ url_for('invoices.show', id=inst.invoice.id) }}">{{ inst.invoice.invoice_number }}</a></td>
+                    <td>{{ inst.installment_number }}</td>
+                    <td class="text-danger">{{ format_money(inst.remaining_amount or inst.amount) }}</td>
+                    <td>{{ format_date(inst.due_date) }}</td>
+                    <td><span class="badge badge-danger">{{ inst.days_overdue }} يوم</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="?page={{ pagination.prev_num }}" class="page-link">
+        <span class="material-icons-round">chevron_right</span>
+    </a>
+    {% endif %}
+    
+    {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <a href="?page={{ p }}" class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% else %}
+        <span class="page-dots">...</span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if pagination.has_next %}
+    <a href="?page={{ pagination.next_num }}" class="page-link">
+        <span class="material-icons-round">chevron_left</span>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <span class="material-icons-round">check_circle</span>
+            <h3>لا توجد متأخرات</h3>
+            <p>جميع العملاء ملتزمون بالسداد</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

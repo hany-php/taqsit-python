@@ -1,0 +1,687 @@
+{% extends 'layouts/master.html' %}
+
+{% block styles %}
+<style>
+.pos-container {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 20px;
+    height: calc(100vh - 120px);
+}
+
+.products-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.products-header {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.products-search {
+    flex: 1;
+    min-width: 200px;
+}
+
+.category-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.category-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.3s;
+}
+
+.category-btn:hover,
+.category-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+    overflow-y: auto;
+    padding: 5px;
+    flex: 1;
+}
+
+.product-card {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.product-card.selected {
+    border-color: var(--success);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.product-card.out-of-stock {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.product-card .qty-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--success);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    z-index: 5;
+    animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); }
+    70% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.product-card .image-wrapper {
+    width: 100%;
+    height: 100px;
+    background: var(--light);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.product-card .image-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+
+.product-card .image-wrapper .no-image {
+    color: var(--muted);
+    font-size: 40px;
+}
+
+.product-card .name {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 5px;
+    line-height: 1.3;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-card .price {
+    color: var(--success);
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.product-card .stock {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+/* Pagination */
+.products-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: white;
+    border-radius: 12px;
+    margin-top: 15px;
+}
+
+.products-pagination .page-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.products-pagination .page-btn:hover:not(:disabled),
+.products-pagination .page-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.products-pagination .page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.products-pagination .page-info {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 0 10px;
+}
+
+/* Cart Section */
+.cart-section {
+    background: white;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.cart-header {
+    padding: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.cart-header h3 {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--light);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.cart-item .item-info {
+    flex: 1;
+}
+
+.cart-item .item-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.cart-item .item-price {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.cart-item .qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cart-item .qty-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-item .qty-value {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.cart-item .remove-btn {
+    color: var(--danger);
+    cursor: pointer;
+}
+
+.cart-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+}
+
+.cart-footer {
+    padding: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.cart-total .amount {
+    color: var(--primary);
+}
+
+@media (max-width: 992px) {
+    .pos-container {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+    
+    .cart-section {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50vh;
+        border-radius: 20px 20px 0 0;
+        z-index: 100;
+        transform: translateY(calc(100% - 60px));
+        transition: transform 0.3s;
+    }
+    
+    .cart-section.open {
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-container">
+    <!-- قسم المنتجات -->
+    <div class="products-section">
+        <div class="products-header">
+            <div class="products-search">
+                <div class="search-input">
+                    <span class="material-icons-round">search</span>
+                    <input type="text" id="productSearch" placeholder="بحث بالاسم أو الباركود...">
+                </div>
+            </div>
+            <div class="category-filter">
+                <button type="button" class="category-btn active" data-category="all">الكل</button>
+                {% for category in categories|default([]) %}
+                <button type="button" class="category-btn" data-category="{{ category.id }}">{{ category.name }}</button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="products-grid" id="productsGrid">
+            <!-- يتم تحميل المنتجات عبر JavaScript -->
+        </div>
+        
+        <div class="products-pagination" id="productsPagination">
+            <button type="button" class="page-btn" id="prevPageBtn" onclick="changePage(-1)">
+                <span class="material-icons-round">chevron_right</span>
+            </button>
+            <span class="page-info" id="pageInfo">1 / 1</span>
+            <button type="button" class="page-btn" id="nextPageBtn" onclick="changePage(1)">
+                <span class="material-icons-round">chevron_left</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- قسم السلة -->
+    <div class="cart-section" id="cartSection">
+        <div class="cart-header" onclick="toggleCart()">
+            <h3>
+                <span class="material-icons-round">shopping_cart</span>
+                السلة
+                <span id="cartCount" class="badge badge-primary">0</span>
+            </h3>
+        </div>
+        
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty">
+                <span class="material-icons-round" style="font-size: 48px;">shopping_cart</span>
+                <p>السلة فارغة</p>
+            </div>
+        </div>
+        
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>الإجمالي:</span>
+                <span class="amount" id="cartTotal">0.00 ج.م</span>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <select id="customerId" class="form-select" style="width: 100%;">
+                    <option value="">عميل نقدي (اختياري)</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if new_customer_id == customer.id %}selected{% endif %}>
+                        {{ customer.full_name }} - {{ customer.phone }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="button" class="btn btn-success" style="width: 100%;" onclick="checkout()" id="checkoutBtn" disabled>
+                <span class="material-icons-round">check</span>
+                إتمام البيع
+            </button>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+{% endblock %}
+
+{% block scripts %}
+<script>
+// بيانات المنتجات
+const allProducts = [
+    {% for product in products %}
+    {
+        id: '{{ product.id }}',
+        name: '{{ product.name|replace("'", "\\'") }}',
+        price: {{ product.cash_price }},
+        stock: {{ product.quantity }},
+        category: '{{ product.category_id }}',
+        image: '{{ product.image or "" }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+let cart = [];
+let currentPage = 1;
+let currentCategory = 'all';
+let searchQuery = '';
+
+// تحديد عدد المنتجات حسب حجم الشاشة
+function getItemsPerPage() {
+    return window.innerWidth <= 992 ? 10 : 20;
+}
+
+// فلترة المنتجات
+function getFilteredProducts() {
+    return allProducts.filter(product => {
+        const matchCategory = currentCategory === 'all' || product.category === currentCategory;
+        const matchSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchCategory && matchSearch;
+    });
+}
+
+// عرض المنتجات
+function renderProducts() {
+    const grid = document.getElementById('productsGrid');
+    const itemsPerPage = getItemsPerPage();
+    const filtered = getFilteredProducts();
+    const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+    
+    // تصحيح الصفحة الحالية
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageProducts = filtered.slice(start, end);
+    
+    let html = '';
+    
+    pageProducts.forEach(product => {
+        const cartItem = cart.find(item => item.id === product.id);
+        const isSelected = cartItem ? true : false;
+        const qty = cartItem ? cartItem.qty : 0;
+        const isOutOfStock = product.stock <= 0;
+        
+        html += `
+            <div class="product-card ${isSelected ? 'selected' : ''} ${isOutOfStock ? 'out-of-stock' : ''}" 
+                 data-id="${product.id}"
+                 ${!isOutOfStock ? `onclick="addToCart('${product.id}')"` : ''}>
+                ${qty > 0 ? `<span class="qty-badge">${qty}</span>` : ''}
+                <div class="image-wrapper">
+                    ${product.image ? 
+                        `<img src="/static/uploads/products/${product.image}" alt="${product.name}">` : 
+                        `<span class="material-icons-round no-image">inventory_2</span>`
+                    }
+                </div>
+                <div class="name">${product.name}</div>
+                <div class="price">${product.price.toFixed(2)} ج.م</div>
+                <div class="stock">متوفر: ${product.stock}</div>
+            </div>
+        `;
+    });
+    
+    grid.innerHTML = html || '<div class="cart-empty"><p>لا توجد منتجات</p></div>';
+    
+    // تحديث pagination
+    document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+    document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+    document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+}
+
+// تغيير الصفحة
+function changePage(delta) {
+    currentPage += delta;
+    renderProducts();
+}
+
+// إضافة للسلة
+function addToCart(id) {
+    const product = allProducts.find(p => p.id === id);
+    if (!product || product.stock <= 0) return;
+    
+    const existingItem = cart.find(item => item.id === id);
+    
+    if (existingItem) {
+        if (existingItem.qty < product.stock) {
+            existingItem.qty++;
+        } else {
+            showAlert('warning', 'الكمية المطلوبة غير متوفرة');
+            return;
+        }
+    } else {
+        cart.push({ 
+            id, 
+            name: product.name, 
+            price: product.price, 
+            qty: 1, 
+            stock: product.stock 
+        });
+    }
+    
+    updateCartUI();
+    renderProducts(); // تحديث عرض المنتجات لإظهار الكمية
+}
+
+function updateQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    
+    const newQty = item.qty + delta;
+    
+    if (newQty > item.stock) {
+        showAlert('warning', 'الكمية المطلوبة غير متوفرة');
+        return;
+    }
+    
+    if (newQty <= 0) {
+        removeFromCart(id);
+        return;
+    }
+    
+    item.qty = newQty;
+    updateCartUI();
+    renderProducts();
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    updateCartUI();
+    renderProducts();
+}
+
+function updateCartUI() {
+    const itemsContainer = document.getElementById('cartItems');
+    const countBadge = document.getElementById('cartCount');
+    const totalSpan = document.getElementById('cartTotal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    
+    if (cart.length === 0) {
+        itemsContainer.innerHTML = `
+            <div class="cart-empty">
+                <span class="material-icons-round" style="font-size: 48px;">shopping_cart</span>
+                <p>السلة فارغة</p>
+            </div>
+        `;
+        countBadge.textContent = '0';
+        totalSpan.textContent = '0.00 ج.م';
+        checkoutBtn.disabled = true;
+        return;
+    }
+    
+    let html = '';
+    let total = 0;
+    let count = 0;
+    
+    cart.forEach(item => {
+        const itemTotal = item.price * item.qty;
+        total += itemTotal;
+        count += item.qty;
+        
+        html += `
+            <div class="cart-item">
+                <div class="item-info">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">${item.price.toFixed(2)} × ${item.qty} = ${itemTotal.toFixed(2)}</div>
+                </div>
+                <div class="qty-controls">
+                    <button type="button" class="qty-btn btn btn-sm btn-secondary" onclick="updateQty('${item.id}', -1)">-</button>
+                    <span class="qty-value">${item.qty}</span>
+                    <button type="button" class="qty-btn btn btn-sm btn-secondary" onclick="updateQty('${item.id}', 1)">+</button>
+                </div>
+                <span class="material-icons-round remove-btn" onclick="removeFromCart('${item.id}')">delete</span>
+            </div>
+        `;
+    });
+    
+    itemsContainer.innerHTML = html;
+    countBadge.textContent = count;
+    totalSpan.textContent = total.toFixed(2) + ' ج.م';
+    checkoutBtn.disabled = false;
+}
+
+async function checkout() {
+    if (cart.length === 0) return;
+    
+    const formData = new FormData();
+    formData.append('csrf_token', document.getElementById('csrfToken').value);
+    formData.append('invoice_type', 'cash');
+    formData.append('customer_id', document.getElementById('customerId').value || '');
+    
+    cart.forEach(item => {
+        formData.append('product_id[]', item.id);
+        formData.append('quantity[]', item.qty);
+        formData.append('price[]', item.price);
+    });
+    
+    try {
+        const response = await fetch('/invoices/store', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', 'تم إنشاء الفاتورة بنجاح');
+            cart = [];
+            updateCartUI();
+            renderProducts();
+            
+            // فتح نافذة الطباعة
+            if (confirm('هل تريد طباعة الفاتورة؟')) {
+                window.open('/invoices/' + data.invoice_id + '/print', '_blank');
+            }
+            
+            // تحديث الصفحة لتحديث الكميات
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+}
+
+// البحث في المنتجات
+document.getElementById('productSearch').addEventListener('input', function(e) {
+    searchQuery = e.target.value;
+    currentPage = 1;
+    renderProducts();
+});
+
+// فلتر التصنيفات
+document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentCategory = this.dataset.category;
+        currentPage = 1;
+        renderProducts();
+    });
+});
+
+// Toggle cart on mobile
+function toggleCart() {
+    document.getElementById('cartSection').classList.toggle('open');
+}
+
+// تحديث عند تغيير حجم الشاشة
+window.addEventListener('resize', renderProducts);
+
+// التحميل الأولي
+document.addEventListener('DOMContentLoaded', function() {
+    renderProducts();
+});
+</script>
+{% endblock %}

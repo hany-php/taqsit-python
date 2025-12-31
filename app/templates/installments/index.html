@@ -1,0 +1,94 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="search-input">
+            <span class="material-icons-round">search</span>
+            <input type="text" name="q" value="{{ search }}" placeholder="بحث برقم الفاتورة أو اسم العميل...">
+        </div>
+        <select name="status" class="form-select">
+            <option value="">كل الحالات</option>
+            <option value="active" {% if status == 'active' %}selected{% endif %}>نشطة</option>
+            <option value="completed" {% if status == 'completed' %}selected{% endif %}>مكتملة</option>
+        </select>
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if invoices %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>رقم الفاتورة</th>
+                    <th>العميل</th>
+                    <th>إجمالي الفاتورة</th>
+                    <th>المدفوع</th>
+                    <th>المتبقي</th>
+                    <th>القسط الشهري</th>
+                    <th>الأقساط</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td><a href="{{ url_for('invoices.show', id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+                    <td><strong>{{ inv.customer.full_name if inv.customer else '-' }}</strong></td>
+                    <td>{{ format_money(inv.total_amount) }}</td>
+                    <td class="text-success">{{ format_money(inv.paid_amount) }}</td>
+                    <td class="text-danger">{{ format_money(inv.remaining_amount) }}</td>
+                    <td>{{ format_money(inv.monthly_installment) }}</td>
+                    <td>
+                        <span class="badge badge-success">{{ inv.paid_installments_count }}</span>
+                        /
+                        <span class="badge badge-warning">{{ inv.pending_installments_count }}</span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('invoices.show', id=inv.id) }}" class="btn btn-sm btn-secondary">عرض</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}&q={{ search }}&status={{ status }}" class="page-link">
+                <span class="material-icons-round">chevron_right</span>
+            </a>
+            {% endif %}
+            
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <a href="?page={{ p }}&q={{ search }}&status={{ status }}" 
+                   class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+                {% else %}
+                <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}&q={{ search }}&status={{ status }}" class="page-link">
+                <span class="material-icons-round">chevron_left</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">payments</span>
+            <h3>لا توجد عقود تقسيط</h3>
+            <p>ابدأ بإنشاء فاتورة تقسيط</p>
+            <a href="{{ url_for('invoices.pos_installment') }}" class="btn btn-primary">
+                <span class="material-icons-round">add</span>
+                بيع بالتقسيط
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

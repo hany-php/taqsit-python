@@ -1,0 +1,105 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('customers.create') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <h4 style="margin-bottom: 20px; color: var(--primary);">
+                <span class="material-icons-round">person</span>
+                البيانات الأساسية
+            </h4>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>الاسم الكامل <span class="required">*</span></label>
+                    <input type="text" name="full_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>رقم الهاتف <span class="required">*</span></label>
+                    <input type="tel" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>هاتف آخر</label>
+                    <input type="tel" name="phone2">
+                </div>
+                
+                <div class="form-group">
+                    <label>الرقم القومي</label>
+                    <input type="text" name="national_id">
+                </div>
+                
+                <div class="form-group">
+                    <label>المدينة</label>
+                    <input type="text" name="city">
+                </div>
+                
+                <div class="form-group">
+                    <label>الحد الائتماني</label>
+                    <input type="number" name="credit_limit" step="0.01" value="5000">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>العنوان</label>
+                <textarea name="address" rows="2"></textarea>
+            </div>
+            
+            <h4 style="margin: 30px 0 20px; color: var(--primary);">
+                <span class="material-icons-round">work</span>
+                بيانات العمل
+            </h4>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>عنوان العمل</label>
+                    <input type="text" name="work_address">
+                </div>
+                
+                <div class="form-group">
+                    <label>هاتف العمل</label>
+                    <input type="tel" name="work_phone">
+                </div>
+            </div>
+            
+            <h4 style="margin: 30px 0 20px; color: var(--primary);">
+                <span class="material-icons-round">verified_user</span>
+                بيانات الضامن
+            </h4>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>اسم الضامن</label>
+                    <input type="text" name="guarantor_name">
+                </div>
+                
+                <div class="form-group">
+                    <label>هاتف الضامن</label>
+                    <input type="tel" name="guarantor_phone">
+                </div>
+                
+                <div class="form-group">
+                    <label>الرقم القومي للضامن</label>
+                    <input type="text" name="guarantor_national_id">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>ملاحظات</label>
+                <textarea name="notes" rows="2"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">إلغاء</a>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons-round">save</span>
+                    حفظ العميل
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

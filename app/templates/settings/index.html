@@ -1,0 +1,911 @@
+{% extends 'layouts/master.html' %}
+
+{% block styles %}
+<style>
+.settings-grid {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 20px;
+    min-height: calc(100vh - 180px);
+}
+
+.settings-nav {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    height: fit-content;
+    position: sticky;
+    top: 80px;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    color: var(--dark);
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 5px;
+}
+
+.settings-nav-item:hover {
+    background: var(--light);
+}
+
+.settings-nav-item.active {
+    background: var(--primary);
+    color: white;
+}
+
+.settings-nav-item .material-icons-round {
+    font-size: 20px;
+}
+
+.settings-section {
+    display: none;
+}
+
+.settings-section.active {
+    display: block;
+}
+
+.color-picker-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.color-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-option input[type="color"] {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.color-option label {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.backup-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: var(--light);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.backup-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.backup-info .icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.backup-details h4 {
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.backup-details span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.print-preview {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 300px;
+    margin: 20px auto 0;
+    text-align: center;
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .settings-nav {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .settings-nav-item {
+        flex: 1;
+        min-width: 150px;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-grid">
+    <!-- قائمة التنقل -->
+    <nav class="settings-nav">
+        <div class="settings-nav-item active" data-section="company">
+            <span class="material-icons-round">store</span>
+            إعدادات الشركة
+        </div>
+        <div class="settings-nav-item" data-section="installment">
+            <span class="material-icons-round">payments</span>
+            إعدادات التقسيط
+        </div>
+        <div class="settings-nav-item" data-section="appearance">
+            <span class="material-icons-round">palette</span>
+            المظهر والألوان
+        </div>
+        <div class="settings-nav-item" data-section="print">
+            <span class="material-icons-round">print</span>
+            إعدادات الطباعة
+        </div>
+        <div class="settings-nav-item" data-section="backup">
+            <span class="material-icons-round">backup</span>
+            النسخ الاحتياطي
+        </div>
+        <a href="{{ url_for('settings.api_keys') }}" class="settings-nav-item">
+            <span class="material-icons-round">vpn_key</span>
+            مفاتيح API
+        </a>
+        <a href="{{ url_for('settings.api_docs') }}" class="settings-nav-item">
+            <span class="material-icons-round">api</span>
+            توثيق API
+        </a>
+        <div class="settings-nav-item" data-section="activity">
+            <span class="material-icons-round">history</span>
+            سجل النشاط
+        </div>
+    </nav>
+    
+    <!-- المحتوى -->
+    <div class="settings-content">
+        <!-- إعدادات الشركة -->
+        <div class="settings-section active" id="section-company">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">store</span> بيانات الشركة</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings.store') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="section" value="company">
+                        
+                        <div class="form-group">
+                            <label>شعار الشركة</label>
+                            <div class="logo-upload">
+                                <input type="file" name="company_logo" accept="image/*" id="logoInput">
+                                {% if settings.get('company_logo') %}
+                                <img src="{{ url_for('static', filename='uploads/' + settings.get('company_logo')) }}" 
+                                     alt="Logo" style="max-width: 150px; margin-top: 10px;">
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>اسم الشركة / المتجر</label>
+                                <input type="text" name="setting_store_name" value="{{ settings.get('store_name', 'نظام تقسيط') }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>هاتف الشركة</label>
+                                <input type="tel" name="setting_store_phone" value="{{ settings.get('store_phone', '') }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>البريد الإلكتروني</label>
+                                <input type="email" name="setting_store_email" value="{{ settings.get('store_email', '') }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>العملة</label>
+                                <input type="text" name="setting_currency" value="{{ settings.get('currency', 'ج.م') }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>عنوان الشركة</label>
+                            <textarea name="setting_store_address" rows="2">{{ settings.get('store_address', '') }}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>الرقم الضريبي</label>
+                            <input type="text" name="setting_tax_number" value="{{ settings.get('tax_number', '') }}">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons-round">save</span>
+                                حفظ الإعدادات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- إعدادات التقسيط -->
+        <div class="settings-section" id="section-installment">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">payments</span> إعدادات التقسيط</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings.store') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="section" value="installment">
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>عدد أشهر التقسيط الافتراضي</label>
+                                <input type="number" name="setting_default_installment_months" 
+                                       value="{{ settings.get('default_installment_months', 12) }}" min="1">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>نسبة غرامة التأخير (%)</label>
+                                <input type="number" name="setting_late_fee_percentage" 
+                                       value="{{ settings.get('late_fee_percentage', 0) }}" step="0.01" min="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>التذكير قبل الاستحقاق (أيام)</label>
+                                <input type="number" name="setting_reminder_days_before" 
+                                       value="{{ settings.get('reminder_days_before', 3) }}" min="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>أيام السماح قبل التأخير</label>
+                                <input type="number" name="setting_grace_period_days" 
+                                       value="{{ settings.get('grace_period_days', 0) }}" min="0">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="setting_auto_apply_late_fee" 
+                                       {% if settings.get('auto_apply_late_fee') == '1' %}checked{% endif %}>
+                                تطبيق غرامة التأخير تلقائياً
+                            </label>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons-round">save</span>
+                                حفظ الإعدادات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- خطط التقسيط -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">event_repeat</span> خطط التقسيط</h3>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="showPlanModal()">
+                        <span class="material-icons-round">add</span>
+                        إضافة خطة
+                    </button>
+                </div>
+                <div class="card-body">
+                    <table class="table" id="plansTable">
+                        <thead>
+                            <tr>
+                                <th>اسم الخطة</th>
+                                <th>عدد الأشهر</th>
+                                <th>نسبة الزيادة</th>
+                                <th>الحد الأدنى للمقدم</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in installment_plans %}
+                            <tr>
+                                <td><strong>{{ plan.name }}</strong></td>
+                                <td>{{ plan.months }} شهر</td>
+                                <td>{{ plan.interest_rate }}%</td>
+                                <td>{{ plan.min_down_payment }}%</td>
+                                <td>
+                                    <span class="badge {{ 'badge-success' if plan.is_active else 'badge-danger' }}">
+                                        {{ 'نشط' if plan.is_active else 'معطل' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-secondary" 
+                                            onclick="editPlan({{ plan.id }}, '{{ plan.name }}', {{ plan.months }}, {{ plan.interest_rate }}, {{ plan.min_down_payment }}, {{ 'true' if plan.is_active else 'false' }})">
+                                        <span class="material-icons-round">edit</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="deletePlan({{ plan.id }})">
+                                        <span class="material-icons-round">delete</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    لا توجد خطط تقسيط. اضغط على "إضافة خطة" لإنشاء خطة جديدة.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- المظهر والألوان -->
+        <div class="settings-section" id="section-appearance">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">palette</span> المظهر والألوان</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings.store') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="section" value="appearance">
+                        
+                        <div class="form-group">
+                            <label>سمة النظام</label>
+                            <select name="setting_theme" class="form-select">
+                                <option value="light" {% if settings.get('theme', 'light') == 'light' %}selected{% endif %}>فاتح</option>
+                                <option value="dark" {% if settings.get('theme') == 'dark' %}selected{% endif %}>داكن</option>
+                                <option value="auto" {% if settings.get('theme') == 'auto' %}selected{% endif %}>تلقائي (حسب النظام)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>الألوان الرئيسية</label>
+                            <div class="color-picker-group">
+                                <div class="color-option">
+                                    <input type="color" name="setting_primary_color" 
+                                           value="{{ settings.get('primary_color', '#1e88e5') }}" id="primaryColor">
+                                    <label>اللون الأساسي</label>
+                                </div>
+                                <div class="color-option">
+                                    <input type="color" name="setting_secondary_color" 
+                                           value="{{ settings.get('secondary_color', '#1e3a5f') }}" id="secondaryColor">
+                                    <label>اللون الثانوي</label>
+                                </div>
+                                <div class="color-option">
+                                    <input type="color" name="setting_success_color" 
+                                           value="{{ settings.get('success_color', '#10b981') }}" id="successColor">
+                                    <label>لون النجاح</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>حجم الخط</label>
+                            <select name="setting_font_size" class="form-select">
+                                <option value="small" {% if settings.get('font_size') == 'small' %}selected{% endif %}>صغير</option>
+                                <option value="medium" {% if settings.get('font_size', 'medium') == 'medium' %}selected{% endif %}>متوسط</option>
+                                <option value="large" {% if settings.get('font_size') == 'large' %}selected{% endif %}>كبير</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="setting_show_animations" 
+                                       {% if settings.get('show_animations', '1') == '1' %}checked{% endif %}>
+                                تفعيل الحركات والتأثيرات
+                            </label>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons-round">save</span>
+                                حفظ الإعدادات
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetColors()">
+                                <span class="material-icons-round">refresh</span>
+                                استعادة الافتراضي
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- إعدادات الطباعة -->
+        <div class="settings-section" id="section-print">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">print</span> إعدادات الطباعة</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings.store') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="section" value="print">
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>حجم ورق الفواتير</label>
+                                <select name="setting_invoice_paper_size" class="form-select">
+                                    <option value="thermal" {% if settings.get('invoice_paper_size', 'thermal') == 'thermal' %}selected{% endif %}>حراري (80mm)</option>
+                                    <option value="a4" {% if settings.get('invoice_paper_size') == 'a4' %}selected{% endif %}>A4</option>
+                                    <option value="a5" {% if settings.get('invoice_paper_size') == 'a5' %}selected{% endif %}>A5</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>حجم ورق الإيصالات</label>
+                                <select name="setting_receipt_paper_size" class="form-select">
+                                    <option value="thermal" {% if settings.get('receipt_paper_size', 'thermal') == 'thermal' %}selected{% endif %}>حراري (80mm)</option>
+                                    <option value="a6" {% if settings.get('receipt_paper_size') == 'a6' %}selected{% endif %}>A6</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="setting_print_logo" 
+                                       {% if settings.get('print_logo', '1') == '1' %}checked{% endif %}>
+                                طباعة الشعار في الفواتير
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="setting_auto_print_invoice" 
+                                       {% if settings.get('auto_print_invoice') == '1' %}checked{% endif %}>
+                                طباعة الفاتورة تلقائياً بعد البيع
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>نص ذيل الفاتورة</label>
+                            <textarea name="setting_invoice_footer" rows="2">{{ settings.get('invoice_footer', 'شكراً لتعاملكم معنا') }}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>الشروط والأحكام</label>
+                            <textarea name="setting_terms_conditions" rows="4">{{ settings.get('terms_conditions', '') }}</textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons-round">save</span>
+                                حفظ الإعدادات
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="testPrint()">
+                                <span class="material-icons-round">print</span>
+                                طباعة تجريبية
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- النسخ الاحتياطي -->
+        <div class="settings-section" id="section-backup">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">backup</span> النسخ الاحتياطي</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <span class="material-icons-round">info</span>
+                        <div>
+                            النسخ الاحتياطي يحفظ جميع بيانات النظام بما في ذلك الفواتير والعملاء والمنتجات والصور.
+                        </div>
+                    </div>
+                    
+                    <!-- خيارات النسخ الاحتياطي -->
+                    <form method="POST" action="{{ url_for('settings.backup_create') }}" class="backup-options">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <h4>⚙️ نوع النسخة الاحتياطية</h4>
+                        
+                        <div class="backup-type-cards">
+                            <label class="backup-card">
+                                <input type="radio" name="backup_type" value="full" checked>
+                                <div class="backup-card-content">
+                                    <span class="material-icons-round">all_inclusive</span>
+                                    <strong>نسخة كاملة</strong>
+                                    <small>قاعدة البيانات + الملفات والصور</small>
+                                </div>
+                            </label>
+                            
+                            <label class="backup-card">
+                                <input type="radio" name="backup_type" value="database">
+                                <div class="backup-card-content">
+                                    <span class="material-icons-round">storage</span>
+                                    <strong>قاعدة البيانات فقط</strong>
+                                    <small>العملاء، المنتجات، الفواتير، الأقساط</small>
+                                </div>
+                            </label>
+                            
+                            <label class="backup-card">
+                                <input type="radio" name="backup_type" value="files">
+                                <div class="backup-card-content">
+                                    <span class="material-icons-round">folder</span>
+                                    <strong>الملفات فقط</strong>
+                                    <small>الصور والملفات المرفوعة</small>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <span class="material-icons-round">backup</span>
+                            إنشاء نسخة احتياطية الآن
+                        </button>
+                    </form>
+                    
+                    <h4 style="margin-bottom: 15px;">النسخ الاحتياطية السابقة</h4>
+                    
+                    {% if backups %}
+                    {% for backup in backups %}
+                    <div class="backup-item">
+                        <div class="backup-info">
+                            <div class="icon">
+                                <span class="material-icons-round">{{ backup.icon }}</span>
+                            </div>
+                            <div class="backup-details">
+                                <h4>{{ backup.type }}</h4>
+                                <span>{{ backup.size }} - {{ backup.date }}</span>
+                                <small class="text-muted">{{ backup.filename }}</small>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <a href="{{ url_for('settings.backup_download', filename=backup.filename) }}" class="btn btn-sm btn-secondary">
+                                <span class="material-icons-round">download</span>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteBackup('{{ backup.filename }}')">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <span class="material-icons-round">cloud_off</span>
+                        <p>لا توجد نسخ احتياطية</p>
+                    </div>
+                    {% endif %}
+                    
+                    <hr style="margin: 25px 0;">
+                    
+                    <h4 style="margin-bottom: 15px;">استعادة نسخة احتياطية</h4>
+                    <form method="POST" action="{{ url_for('settings.backup_restore') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="form-group">
+                            <input type="file" name="backup_file" accept=".sql,.zip" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning" onclick="return confirm('سيتم استبدال جميع البيانات الحالية. هل أنت متأكد؟')">
+                            <span class="material-icons-round">restore</span>
+                            استعادة النسخة الاحتياطية
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- سجل النشاط -->
+        <div class="settings-section" id="section-activity">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="material-icons-round">history</span> سجل النشاط</h3>
+                    <a href="{{ url_for('settings.activity_log') }}" class="btn btn-secondary btn-sm">
+                        عرض الكل
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>يمكنك متابعة جميع الأنشطة والتغييرات في النظام من خلال سجل النشاط.</p>
+                    <a href="{{ url_for('settings.activity_log') }}" class="btn btn-primary">
+                        <span class="material-icons-round">history</span>
+                        فتح سجل النشاط
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// التنقل بين الأقسام
+document.querySelectorAll('.settings-nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const section = this.dataset.section;
+        
+        // تحديث التنقل
+        document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        
+        // تحديث المحتوى
+        document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + section).classList.add('active');
+        
+        // حفظ القسم الحالي
+        localStorage.setItem('activeSettingsSection', section);
+    });
+});
+
+// استعادة القسم المحفوظ
+document.addEventListener('DOMContentLoaded', function() {
+    const savedSection = localStorage.getItem('activeSettingsSection');
+    if (savedSection) {
+        const navItem = document.querySelector(`[data-section="${savedSection}"]`);
+        if (navItem) navItem.click();
+    }
+});
+
+// إعادة ضبط الألوان
+function resetColors() {
+    document.getElementById('primaryColor').value = '#1e88e5';
+    document.getElementById('secondaryColor').value = '#1e3a5f';
+    document.getElementById('successColor').value = '#10b981';
+}
+
+// طباعة تجريبية
+function testPrint() {
+    window.open('/settings/test-print', '_blank');
+}
+
+// حذف نسخة احتياطية
+function deleteBackup(filename) {
+    if (confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')) {
+        fetch('/settings/backup/' + filename + '/delete', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  location.reload();
+              } else {
+                  alert(data.message);
+              }
+          });
+    }
+}
+
+// ============= خطط التقسيط =============
+function showPlanModal() {
+    document.getElementById('planModalTitle').textContent = 'إضافة خطة جديدة';
+    document.getElementById('planForm').action = '/settings/installment-plans/create';
+    document.getElementById('planName').value = '';
+    document.getElementById('planMonths').value = '';
+    document.getElementById('planInterest').value = '0';
+    document.getElementById('planDownPayment').value = '0';
+    document.getElementById('planActive').checked = true;
+    document.getElementById('planModal').classList.add('show');
+}
+
+function editPlan(id, name, months, interest, downPayment, isActive) {
+    document.getElementById('planModalTitle').textContent = 'تعديل الخطة';
+    document.getElementById('planForm').action = '/settings/installment-plans/' + id + '/update';
+    document.getElementById('planName').value = name;
+    document.getElementById('planMonths').value = months;
+    document.getElementById('planInterest').value = interest;
+    document.getElementById('planDownPayment').value = downPayment;
+    document.getElementById('planActive').checked = isActive;
+    document.getElementById('planModal').classList.add('show');
+}
+
+function closePlanModal() {
+    document.getElementById('planModal').classList.remove('show');
+}
+
+function deletePlan(id) {
+    if (confirm('هل أنت متأكد من حذف هذه الخطة؟')) {
+        fetch('/settings/installment-plans/' + id + '/delete', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  location.href = location.pathname + '#section-installment';
+                  location.reload();
+              } else {
+                  showToast(data.message || 'حدث خطأ', 'error');
+              }
+          });
+    }
+}
+
+// منع إغلاق Modal عند الضغط داخلها
+document.getElementById('planModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePlanModal();
+    }
+});
+
+// منع إغلاق Modal عند الضغط داخل المحتوى
+document.querySelector('#planModal .modal-content').addEventListener('click', function(e) {
+    e.stopPropagation();
+});
+
+// معالجة hash في URL لفتح القسم الصحيح
+if (window.location.hash) {
+    const hash = window.location.hash.replace('#', '');
+    const section = hash.replace('section-', '');
+    const navItem = document.querySelector('[data-section="' + section + '"]');
+    const sectionEl = document.getElementById(hash);
+    
+    if (navItem && sectionEl) {
+        document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+        navItem.classList.add('active');
+        document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+        sectionEl.classList.add('active');
+    }
+}
+</script>
+
+<!-- Modal خطة التقسيط -->
+<div class="modal" id="planModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><span class="material-icons-round">event_repeat</span> <span id="planModalTitle">إضافة خطة جديدة</span></h3>
+            <button type="button" class="modal-close" onclick="closePlanModal()">&times;</button>
+        </div>
+        <form id="planForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم الخطة *</label>
+                    <input type="text" name="name" id="planName" required placeholder="مثال: 6 أشهر">
+                </div>
+                <div class="form-group">
+                    <label>عدد الأشهر *</label>
+                    <input type="number" name="months" id="planMonths" required min="1" max="60" placeholder="6">
+                </div>
+                <div class="form-group">
+                    <label>نسبة الزيادة (%)</label>
+                    <input type="number" name="interest_rate" id="planInterest" step="0.01" min="0" max="100" value="0">
+                </div>
+                <div class="form-group">
+                    <label>الحد الأدنى للمقدم (%)</label>
+                    <input type="number" name="min_down_payment" id="planDownPayment" step="0.01" min="0" max="100" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" id="planActive" checked>
+                        خطة نشطة
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closePlanModal()">إلغاء</button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons-round">save</span>
+                    حفظ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal.show { display: flex; }
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--muted);
+}
+.modal-body { padding: 20px; }
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Backup Cards */
+.backup-options h4 {
+    margin: 20px 0 15px;
+    font-size: 16px;
+}
+.backup-type-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+.backup-card {
+    cursor: pointer;
+}
+.backup-card input[type="radio"] {
+    display: none;
+}
+.backup-card-content {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+}
+.backup-card-content span {
+    font-size: 40px;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 10px;
+}
+.backup-card-content strong {
+    display: block;
+    margin-bottom: 5px;
+}
+.backup-card-content small {
+    color: var(--muted);
+    font-size: 12px;
+}
+.backup-card input:checked + .backup-card-content {
+    border-color: var(--primary);
+    background: rgba(30, 136, 229, 0.1);
+}
+.backup-card:hover .backup-card-content {
+    border-color: var(--primary);
+}
+</style>
+{% endblock %}

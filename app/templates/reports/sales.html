@@ -1,0 +1,81 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label style="margin-left: 10px;">من</label>
+            <input type="date" name="from" value="{{ from_date }}">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label style="margin-left: 10px;">إلى</label>
+            <input type="date" name="to" value="{{ to_date }}">
+        </div>
+        <button type="submit" class="btn btn-secondary">عرض التقرير</button>
+    </form>
+</div>
+
+<div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card stat-success">
+        <div class="stat-icon">
+            <span class="material-icons-round">point_of_sale</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">المبيعات النقدية</span>
+            <span class="stat-value">{{ format_money(cash_total) }}</span>
+        </div>
+    </div>
+    
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">
+            <span class="material-icons-round">payments</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">مبيعات التقسيط</span>
+            <span class="stat-value">{{ format_money(installment_total) }}</span>
+        </div>
+    </div>
+    
+    <div class="stat-card stat-info">
+        <div class="stat-icon">
+            <span class="material-icons-round">receipt_long</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">إجمالي المبيعات</span>
+            <span class="stat-value">{{ format_money(cash_total + installment_total) }}</span>
+            <span class="stat-sub">{{ invoices | length }} فاتورة</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3><span class="material-icons-round">show_chart</span> المبيعات اليومية</h3>
+    </div>
+    <div class="card-body">
+        {% if daily_sales %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>إجمالي المبيعات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ds in daily_sales %}
+                <tr>
+                    <td>{{ ds.date }}</td>
+                    <td class="text-success">{{ format_money(ds.total) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">analytics</span>
+            <h3>لا توجد بيانات</h3>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

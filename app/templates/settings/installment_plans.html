@@ -1,0 +1,331 @@
+{% extends 'layouts/master.html' %}
+
+{% block styles %}
+<style>
+.plans-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.plans-table th,
+.plans-table td {
+    padding: 15px 20px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+}
+
+.plans-table th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.plans-table tr:hover {
+    background: #fafafa;
+}
+
+.plans-table tr:last-child td {
+    border-bottom: none;
+}
+
+.plan-name {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.plan-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.plan-badge.active {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.plan-badge.inactive {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--danger);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+}
+
+.empty-state .material-icons-round {
+    font-size: 60px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3><span class="material-icons-round">payments</span> خطط التقسيط</h3>
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary" onclick="showAddModal()">
+                <span class="material-icons-round">add</span>
+                إضافة خطة
+            </button>
+            <a href="{{ url_for('settings.index') }}" class="btn btn-secondary">
+                <span class="material-icons-round">arrow_forward</span>
+                رجوع
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if plans %}
+        <table class="plans-table">
+            <thead>
+                <tr>
+                    <th>اسم الخطة</th>
+                    <th>عدد الأشهر</th>
+                    <th>نسبة الزيادة</th>
+                    <th>الحد الأدنى للمقدم</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plan in plans %}
+                <tr>
+                    <td class="plan-name">{{ plan.name }}</td>
+                    <td>{{ plan.months }} شهر</td>
+                    <td>{{ plan.interest_rate }}%</td>
+                    <td>{{ plan.min_down_payment }}%</td>
+                    <td>
+                        <span class="plan-badge {{ 'active' if plan.is_active else 'inactive' }}">
+                            {{ 'نشط' if plan.is_active else 'معطل' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-secondary" 
+                                    onclick="showEditModal({{ plan.id }}, '{{ plan.name }}', {{ plan.months }}, {{ plan.interest_rate }}, {{ plan.min_down_payment }}, {{ 'true' if plan.is_active else 'false' }})">
+                                <span class="material-icons-round">edit</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deletePlan({{ plan.id }})">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">payments</span>
+            <h3>لا توجد خطط تقسيط</h3>
+            <p>قم بإضافة خطة جديدة للبدء</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal إضافة/تعديل خطة -->
+<div class="modal" id="planModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">
+                <span class="material-icons-round">add</span>
+                <span id="modalTitleText">إضافة خطة جديدة</span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="planForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="plan_id" id="planId">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم الخطة *</label>
+                    <input type="text" name="name" id="planName" required placeholder="مثال: 6 أشهر">
+                </div>
+                <div class="form-group">
+                    <label>عدد الأشهر *</label>
+                    <input type="number" name="months" id="planMonths" required min="1" max="60" placeholder="6">
+                </div>
+                <div class="form-group">
+                    <label>نسبة الزيادة (%)</label>
+                    <input type="number" name="interest_rate" id="planInterest" step="0.01" min="0" max="100" placeholder="0">
+                    <small class="text-muted">النسبة المضافة على السعر الأصلي</small>
+                </div>
+                <div class="form-group">
+                    <label>الحد الأدنى للمقدم (%)</label>
+                    <input type="number" name="min_down_payment" id="planDownPayment" step="0.01" min="0" max="100" placeholder="0">
+                    <small class="text-muted">أقل نسبة للدفعة المقدمة</small>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" id="planActive" checked>
+                        خطة نشطة
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons-round">save</span>
+                    حفظ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isEditMode = false;
+
+function showAddModal() {
+    isEditMode = false;
+    document.getElementById('modalTitleText').textContent = 'إضافة خطة جديدة';
+    document.getElementById('planForm').action = '{{ url_for("settings.installment_plan_create") }}';
+    document.getElementById('planId').value = '';
+    document.getElementById('planName').value = '';
+    document.getElementById('planMonths').value = '';
+    document.getElementById('planInterest').value = '0';
+    document.getElementById('planDownPayment').value = '0';
+    document.getElementById('planActive').checked = true;
+    document.getElementById('planModal').classList.add('show');
+}
+
+function showEditModal(id, name, months, interest, downPayment, isActive) {
+    isEditMode = true;
+    document.getElementById('modalTitleText').textContent = 'تعديل الخطة';
+    document.getElementById('planForm').action = '/settings/installment-plans/' + id + '/update';
+    document.getElementById('planId').value = id;
+    document.getElementById('planName').value = name;
+    document.getElementById('planMonths').value = months;
+    document.getElementById('planInterest').value = interest;
+    document.getElementById('planDownPayment').value = downPayment;
+    document.getElementById('planActive').checked = isActive;
+    document.getElementById('planModal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('planModal').classList.remove('show');
+}
+
+function deletePlan(id) {
+    if (confirm('هل أنت متأكد من حذف هذه الخطة؟')) {
+        fetch('/settings/installment-plans/' + id + '/delete', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  location.reload();
+              } else {
+                  showToast(data.message || 'حدث خطأ', 'error');
+              }
+          });
+    }
+}
+
+// إغلاق Modal بالضغط خارجها
+document.getElementById('planModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<a href="{{ url_for('customers.create') }}" class="btn btn-primary">
+    <span class="material-icons-round">add</span>
+    إضافة عميل
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="search-input">
+            <span class="material-icons-round">search</span>
+            <input type="text" name="q" value="{{ search }}" placeholder="بحث بالاسم أو الهاتف أو الرقم القومي...">
+        </div>
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if customers %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>الهاتف</th>
+                    <th>الرقم القومي</th>
+                    <th>المدينة</th>
+                    <th>الرصيد المستحق</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td>{{ c.id }}</td>
+                    <td><strong>{{ c.full_name }}</strong></td>
+                    <td>{{ c.phone }}</td>
+                    <td>{{ c.national_id or '-' }}</td>
+                    <td>{{ c.city or '-' }}</td>
+                    <td class="{% if c.balance > 0 %}text-danger{% endif %}">{{ format_money(c.balance) }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('customers.show', id=c.id) }}" class="btn btn-sm btn-secondary" title="عرض">
+                                <span class="material-icons-round">visibility</span>
+                            </a>
+                            <a href="{{ url_for('customers.edit', id=c.id) }}" class="btn btn-sm btn-primary" title="تعديل">
+                                <span class="material-icons-round">edit</span>
+                            </a>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ c.id }}, '{{ c.full_name }}')" title="حذف">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}&q={{ search }}" class="page-link">
+                <span class="material-icons-round">chevron_right</span>
+            </a>
+            {% endif %}
+            
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <a href="?page={{ p }}&q={{ search }}" class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+                {% else %}
+                <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}&q={{ search }}" class="page-link">
+                <span class="material-icons-round">chevron_left</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">people</span>
+            <h3>لا يوجد عملاء</h3>
+            <p>ابدأ بإضافة عملائك</p>
+            <a href="{{ url_for('customers.create') }}" class="btn btn-primary">
+                <span class="material-icons-round">add</span>
+                إضافة عميل
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>تأكيد الحذف</h3>
+            <button class="close-modal" onclick="closeModal('deleteModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>هل أنت متأكد من حذف العميل <strong id="deleteCustomerName"></strong>؟</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">إلغاء</button>
+            <form id="deleteForm" method="POST" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">حذف</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(id, name) {
+    document.getElementById('deleteCustomerName').textContent = name;
+    document.getElementById('deleteForm').action = '/customers/' + id + '/delete';
+    openModal('deleteModal');
+}
+</script>
+{% endblock %}

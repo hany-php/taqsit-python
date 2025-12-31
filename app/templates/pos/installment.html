@@ -1,0 +1,430 @@
+{% extends 'layouts/master.html' %}
+
+{% block styles %}
+<style>
+.pos-container {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 20px;
+    height: calc(100vh - 120px);
+}
+
+.products-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.products-search {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.product-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.product-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.product-card.out-of-stock {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.product-card .name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.product-card .price {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.product-card .stock {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 5px;
+}
+
+.cart-section {
+    background: white;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.cart-header {
+    padding: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    max-height: 200px;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background: var(--light);
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+
+.cart-item .item-info {
+    flex: 1;
+}
+
+.cart-item .item-name {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.cart-item .item-price {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.cart-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+}
+
+.installment-options {
+    padding: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.installment-options h4 {
+    margin-bottom: 15px;
+    font-size: 15px;
+    color: var(--primary);
+}
+
+.cart-footer {
+    padding: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.summary-row.total {
+    font-size: 18px;
+    font-weight: 700;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-container">
+    <!-- قسم المنتجات -->
+    <div class="products-section">
+        <div class="products-search">
+            <div class="search-input">
+                <span class="material-icons-round">search</span>
+                <input type="text" id="productSearch" placeholder="بحث بالاسم أو الباركود...">
+            </div>
+        </div>
+        
+        <div class="products-grid" id="productsGrid">
+            {% for product in products %}
+            <div class="product-card {% if product.quantity <= 0 %}out-of-stock{% endif %}" 
+                 data-id="{{ product.id }}"
+                 data-name="{{ product.name }}"
+                 data-price="{{ product.installment_price or product.cash_price }}"
+                 data-stock="{{ product.quantity }}"
+                 {% if product.quantity > 0 %}onclick="addToCart(this)"{% endif %}>
+                <div class="name">{{ product.name }}</div>
+                <div class="price">{{ format_money(product.installment_price or product.cash_price) }}</div>
+                <div class="stock">متوفر: {{ product.quantity }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- قسم السلة -->
+    <div class="cart-section">
+        <div class="cart-header">
+            <h3>
+                <span class="material-icons-round">payments</span>
+                فاتورة تقسيط
+            </h3>
+        </div>
+        
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty">
+                <span class="material-icons-round" style="font-size: 40px;">shopping_cart</span>
+                <p>أضف منتجات للفاتورة</p>
+            </div>
+        </div>
+        
+        <div class="installment-options">
+            <h4><span class="material-icons-round">person</span> بيانات العميل والتقسيط</h4>
+            
+            <div class="form-group">
+                <label>العميل <span class="required">*</span></label>
+                <select id="customerId" class="form-select" style="width: 100%;" required>
+                    <option value="">-- اختر العميل --</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if new_customer_id == customer.id %}selected{% endif %}>
+                        {{ customer.full_name }} - {{ customer.phone }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-grid" style="gap: 10px;">
+                <div class="form-group">
+                    <label>الدفعة المقدمة</label>
+                    <input type="number" id="downPayment" value="0" min="0" step="0.01" onchange="calculateInstallment()">
+                </div>
+                
+                <div class="form-group">
+                    <label>عدد الأقساط</label>
+                    <select id="installmentMonths" onchange="calculateInstallment()">
+                        <option value="3">3 أشهر</option>
+                        <option value="6">6 أشهر</option>
+                        <option value="12" selected>12 شهر</option>
+                        <option value="18">18 شهر</option>
+                        <option value="24">24 شهر</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cart-footer">
+            <div class="summary-row">
+                <span>إجمالي الفاتورة:</span>
+                <span id="cartTotal">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+                <span>الدفعة المقدمة:</span>
+                <span id="downPaymentDisplay">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+                <span>المبلغ المتبقي:</span>
+                <span id="remainingAmount">0.00 ج.م</span>
+            </div>
+            <div class="summary-row total">
+                <span>القسط الشهري:</span>
+                <span id="monthlyInstallment" class="text-primary">0.00 ج.م</span>
+            </div>
+            
+            <button class="btn btn-primary" style="width: 100%; margin-top: 15px;" onclick="checkout()" id="checkoutBtn" disabled>
+                <span class="material-icons-round">check</span>
+                إنشاء عقد التقسيط
+            </button>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+{% endblock %}
+
+{% block scripts %}
+<script>
+let cart = [];
+
+function addToCart(element) {
+    const id = element.dataset.id;
+    const name = element.dataset.name;
+    const price = parseFloat(element.dataset.price);
+    const stock = parseInt(element.dataset.stock);
+    
+    const existingItem = cart.find(item => item.id === id);
+    
+    if (existingItem) {
+        if (existingItem.qty < stock) {
+            existingItem.qty++;
+        } else {
+            showAlert('warning', 'الكمية المطلوبة غير متوفرة');
+            return;
+        }
+    } else {
+        cart.push({ id, name, price, qty: 1, stock });
+    }
+    
+    updateCartUI();
+}
+
+function updateQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    
+    const newQty = item.qty + delta;
+    
+    if (newQty > item.stock) {
+        showAlert('warning', 'الكمية المطلوبة غير متوفرة');
+        return;
+    }
+    
+    if (newQty <= 0) {
+        removeFromCart(id);
+        return;
+    }
+    
+    item.qty = newQty;
+    updateCartUI();
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    updateCartUI();
+}
+
+function updateCartUI() {
+    const itemsContainer = document.getElementById('cartItems');
+    
+    if (cart.length === 0) {
+        itemsContainer.innerHTML = `
+            <div class="cart-empty">
+                <span class="material-icons-round" style="font-size: 40px;">shopping_cart</span>
+                <p>أضف منتجات للفاتورة</p>
+            </div>
+        `;
+        document.getElementById('checkoutBtn').disabled = true;
+        calculateInstallment();
+        return;
+    }
+    
+    let html = '';
+    
+    cart.forEach(item => {
+        const itemTotal = item.price * item.qty;
+        
+        html += `
+            <div class="cart-item">
+                <div class="item-info">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">${item.price.toFixed(2)} × ${item.qty} = ${itemTotal.toFixed(2)}</div>
+                </div>
+                <div class="qty-controls">
+                    <button class="qty-btn btn btn-sm btn-secondary" onclick="updateQty('${item.id}', -1)">-</button>
+                    <span>${item.qty}</span>
+                    <button class="qty-btn btn btn-sm btn-secondary" onclick="updateQty('${item.id}', 1)">+</button>
+                </div>
+                <span class="material-icons-round remove-btn" onclick="removeFromCart('${item.id}')" style="color: var(--danger); cursor: pointer;">delete</span>
+            </div>
+        `;
+    });
+    
+    itemsContainer.innerHTML = html;
+    calculateInstallment();
+}
+
+function calculateInstallment() {
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
+    const months = parseInt(document.getElementById('installmentMonths').value);
+    
+    const remaining = total - downPayment;
+    const monthly = remaining > 0 ? remaining / months : 0;
+    
+    document.getElementById('cartTotal').textContent = total.toFixed(2) + ' ج.م';
+    document.getElementById('downPaymentDisplay').textContent = downPayment.toFixed(2) + ' ج.م';
+    document.getElementById('remainingAmount').textContent = remaining.toFixed(2) + ' ج.م';
+    document.getElementById('monthlyInstallment').textContent = monthly.toFixed(2) + ' ج.م';
+    
+    const customerId = document.getElementById('customerId').value;
+    document.getElementById('checkoutBtn').disabled = cart.length === 0 || !customerId;
+}
+
+document.getElementById('customerId').addEventListener('change', calculateInstallment);
+
+async function checkout() {
+    if (cart.length === 0) return;
+    
+    const customerId = document.getElementById('customerId').value;
+    if (!customerId) {
+        showAlert('error', 'يجب اختيار العميل');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('csrf_token', document.getElementById('csrfToken').value);
+    formData.append('invoice_type', 'installment');
+    formData.append('customer_id', customerId);
+    formData.append('down_payment', document.getElementById('downPayment').value || 0);
+    formData.append('installment_months', document.getElementById('installmentMonths').value);
+    
+    cart.forEach(item => {
+        formData.append('product_id[]', item.id);
+        formData.append('quantity[]', item.qty);
+        formData.append('price[]', item.price);
+    });
+    
+    try {
+        const response = await fetch('/invoices/store', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', 'تم إنشاء عقد التقسيط بنجاح');
+            cart = [];
+            updateCartUI();
+            
+            if (confirm('هل تريد عرض تفاصيل العقد؟')) {
+                window.location.href = '/invoices/' + data.invoice_id;
+            }
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+}
+
+// البحث في المنتجات
+document.getElementById('productSearch').addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.product-card');
+    
+    cards.forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        if (name.includes(query)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

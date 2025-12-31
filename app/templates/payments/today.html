@@ -1,0 +1,54 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card stat-success">
+        <div class="stat-icon">
+            <span class="material-icons-round">account_balance_wallet</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">تحصيل اليوم</span>
+            <span class="stat-value">{{ format_money(total) }}</span>
+            <span class="stat-sub">{{ payments | length }} عملية</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if payments %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>رقم الإيصال</th>
+                    <th>الفاتورة</th>
+                    <th>العميل</th>
+                    <th>المبلغ</th>
+                    <th>الوقت</th>
+                    <th>ملاحظات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pay in payments %}
+                <tr>
+                    <td>{{ pay.receipt_number }}</td>
+                    <td>
+                        <a href="{{ url_for('invoices.show', id=pay.invoice.id) }}">{{ pay.invoice.invoice_number }}</a>
+                    </td>
+                    <td>{{ pay.invoice.customer.full_name if pay.invoice and pay.invoice.customer else 'نقدي' }}</td>
+                    <td class="text-success">{{ format_money(pay.amount) }}</td>
+                    <td>{{ format_datetime(pay.payment_date) }}</td>
+                    <td>{{ pay.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">account_balance_wallet</span>
+            <h3>لا توجد مدفوعات اليوم</h3>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

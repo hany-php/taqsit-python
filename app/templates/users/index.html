@@ -1,0 +1,161 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<a href="{{ url_for('users.create') }}" class="btn btn-primary">
+    <span class="material-icons-round">add</span>
+    إضافة مستخدم
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="search-input">
+            <span class="material-icons-round">search</span>
+            <input type="text" name="q" value="{{ search }}" placeholder="بحث بالاسم أو اسم المستخدم...">
+        </div>
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if users %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>اسم المستخدم</th>
+                    <th>الهاتف</th>
+                    <th>الصلاحية</th>
+                    <th>الحالة</th>
+                    <th>آخر دخول</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td><strong>{{ user.full_name }}</strong></td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.phone or '-' }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'danger' if user.role == 'admin' else 'primary' }}">
+                            {{ user_role(user.role) }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if user.is_active else 'danger' }}">
+                            {{ 'نشط' if user.is_active else 'معطل' }}
+                        </span>
+                    </td>
+                    <td>{{ format_datetime(user.last_login) if user.last_login else '-' }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-sm btn-primary" title="تعديل">
+                                <span class="material-icons-round">edit</span>
+                            </a>
+                            {% if user.id != current_user.id %}
+                            <button class="btn btn-sm btn-{{ 'warning' if user.is_active else 'success' }}" 
+                                    onclick="toggleUser({{ user.id }})"
+                                    title="{{ 'تعطيل' if user.is_active else 'تفعيل' }}">
+                                <span class="material-icons-round">{{ 'block' if user.is_active else 'check_circle' }}</span>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ user.id }}, '{{ user.full_name }}')" title="حذف">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">manage_accounts</span>
+            <h3>لا يوجد مستخدمين</h3>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>تأكيد الحذف</h3>
+            <button class="close-modal" onclick="closeModal('deleteModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>هل أنت متأكد من حذف المستخدم <strong id="deleteUserName"></strong>؟</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">إلغاء</button>
+            <button class="btn btn-danger" onclick="deleteUser()">حذف</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let deleteUserId = null;
+
+function confirmDelete(id, name) {
+    deleteUserId = id;
+    document.getElementById('deleteUserName').textContent = name;
+    openModal('deleteModal');
+}
+
+async function deleteUser() {
+    if (!deleteUserId) return;
+    
+    try {
+        const response = await fetch('/users/' + deleteUserId + '/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', data.message);
+            closeModal('deleteModal');
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+}
+
+async function toggleUser(id) {
+    try {
+        const response = await fetch('/users/' + id + '/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', data.message);
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+}
+</script>
+{% endblock %}

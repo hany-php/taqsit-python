@@ -1,0 +1,693 @@
+{% extends 'layouts/master.html' %}
+
+{% block styles %}
+<style>
+.api-docs {
+    max-width: 1200px;
+}
+
+.api-section {
+    margin-bottom: 30px;
+}
+
+.api-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 25px;
+    background: linear-gradient(135deg, #1e40af, #1e3a8a);
+    color: #ffffff;
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.api-section h2 .material-icons-round {
+    font-size: 28px;
+}
+
+.api-content {
+    background: white;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 25px;
+}
+
+.api-content h4 {
+    color: var(--dark);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 25px 0 15px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border);
+}
+
+.api-content h4:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.endpoint-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.endpoint-table th,
+.endpoint-table td {
+    padding: 15px 18px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+}
+
+.endpoint-table th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.endpoint-table tr:hover {
+    background: #fafafa;
+}
+
+.endpoint-table td:last-child {
+    color: #374151;
+    line-height: 1.5;
+}
+
+.method-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 70px;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.method-get { background: #10b981; color: white; }
+.method-post { background: #3b82f6; color: white; }
+.method-put { background: #f59e0b; color: white; }
+.method-delete { background: #ef4444; color: white; }
+
+.endpoint-path {
+    font-family: 'Courier New', Consolas, monospace;
+    background: #1e293b;
+    color: #38bdf8;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    direction: ltr;
+    text-align: left;
+    display: inline-block;
+}
+
+.code-block {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.8;
+    direction: ltr;
+    text-align: left;
+    margin: 15px 0;
+    border: 1px solid #1e293b;
+}
+
+.code-block .comment { color: #64748b; }
+.code-block .string { color: #34d399; }
+.code-block .key { color: #60a5fa; }
+.code-block .number { color: #fbbf24; }
+
+.status-table {
+    width: 100%;
+    max-width: 600px;
+}
+
+.status-table td:first-child {
+    font-weight: 700;
+    width: 100px;
+}
+
+.api-key-box {
+    background: linear-gradient(135deg, #1e3a5f, #0f172a);
+    color: white;
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.api-key-box h3 {
+    margin: 0 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.api-key-box p {
+    margin: 12px 0;
+    font-size: 16px;
+    line-height: 1.7;
+    opacity: 0.95;
+}
+
+.api-key-box code {
+    background: rgba(255,255,255,0.15);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 14px;
+}
+
+.api-key-box .code-block {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.base-url {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    padding: 20px 25px;
+    border-radius: 12px;
+    margin: 25px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+}
+
+.base-url strong {
+    color: var(--dark);
+    font-size: 15px;
+    margin-left: 10px;
+}
+
+.base-url code {
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 17px;
+    color: var(--primary);
+    font-weight: 600;
+    direction: ltr;
+    background: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.copy-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.copy-btn:hover {
+    background: var(--secondary);
+    transform: translateY(-2px);
+}
+
+.alert-box {
+    padding: 18px 22px;
+    border-radius: 12px;
+    margin: 20px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.alert-box.info {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #7dd3fc;
+}
+
+.alert-box.warning {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    padding: 10px 25px;
+    background: var(--light);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.tab:hover {
+    background: #e2e8f0;
+}
+
+.tab.active {
+    background: var(--primary);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="api-docs">
+    <!-- المصادقة -->
+    <div class="api-key-box">
+        <h3>
+            <span class="material-icons-round">vpn_key</span>
+            المصادقة (Authentication)
+        </h3>
+        <p>جميع طلبات API تتطلب مفتاح API صالح. أضف المفتاح في Header الطلب:</p>
+        <div class="code-block">
+X-API-KEY: your_api_key_here
+        </div>
+        <p>
+            <a href="{{ url_for('settings.api_keys') }}" class="btn btn-light" style="margin-top: 10px;">
+                <span class="material-icons-round">key</span>
+                إدارة مفاتيح API
+            </a>
+        </p>
+    </div>
+    
+    <!-- رابط API الأساسي -->
+    <div class="base-url">
+        <div>
+            <strong>رابط API الأساسي:</strong>
+            <code id="baseUrl">{{ request.host_url }}api/v2/</code>
+        </div>
+        <button class="copy-btn" onclick="copyBaseUrl()">
+            <span class="material-icons-round">content_copy</span>
+            نسخ
+        </button>
+    </div>
+    
+    <!-- المنتجات -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">inventory_2</span>
+            المنتجات (Products)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/products</code></td>
+                        <td>جلب جميع المنتجات (مع pagination)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/products/{id}</code></td>
+                        <td>جلب منتج بالـ ID</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-post">POST</span></td>
+                        <td><code class="endpoint-path">/api/v2/products</code></td>
+                        <td>إضافة منتج جديد</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-put">PUT</span></td>
+                        <td><code class="endpoint-path">/api/v2/products/{id}</code></td>
+                        <td>تحديث منتج</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-delete">DELETE</span></td>
+                        <td><code class="endpoint-path">/api/v2/products/{id}</code></td>
+                        <td>حذف منتج</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>مثال: إضافة منتج جديد</h4>
+            <div class="code-block">
+curl -X POST "{{ request.host_url }}api/v2/products" \
+     -H "X-API-KEY: your_api_key" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "موبايل سامسونج A54",
+       "price": 15000,
+       "cost_price": 12000,
+       "category_id": 1,
+       "stock_quantity": 10
+     }'
+            </div>
+        </div>
+    </div>
+    
+    <!-- التصنيفات -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">category</span>
+            التصنيفات (Categories)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/categories</code></td>
+                        <td>جلب جميع التصنيفات</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/categories/{id}</code></td>
+                        <td>جلب تصنيف بالـ ID</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-post">POST</span></td>
+                        <td><code class="endpoint-path">/api/v2/categories</code></td>
+                        <td>إضافة تصنيف جديد</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-put">PUT</span></td>
+                        <td><code class="endpoint-path">/api/v2/categories/{id}</code></td>
+                        <td>تحديث تصنيف</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-delete">DELETE</span></td>
+                        <td><code class="endpoint-path">/api/v2/categories/{id}</code></td>
+                        <td>حذف تصنيف</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- العملاء -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">people</span>
+            العملاء (Customers)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/customers</code></td>
+                        <td>جلب جميع العملاء</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/customers/{id}</code></td>
+                        <td>جلب عميل بالـ ID</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-post">POST</span></td>
+                        <td><code class="endpoint-path">/api/v2/customers</code></td>
+                        <td>إضافة عميل جديد</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-put">PUT</span></td>
+                        <td><code class="endpoint-path">/api/v2/customers/{id}</code></td>
+                        <td>تحديث عميل</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-delete">DELETE</span></td>
+                        <td><code class="endpoint-path">/api/v2/customers/{id}</code></td>
+                        <td>حذف عميل</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>مثال: إضافة عميل جديد</h4>
+            <div class="code-block">
+curl -X POST "{{ request.host_url }}api/v2/customers" \
+     -H "X-API-KEY: your_api_key" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "full_name": "أحمد محمد",
+       "phone": "01234567890",
+       "address": "القاهرة - مصر الجديدة"
+     }'
+            </div>
+        </div>
+    </div>
+    
+    <!-- الفواتير -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">receipt</span>
+            الفواتير (Invoices)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/invoices</code></td>
+                        <td>جلب جميع الفواتير</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/invoices/{id}</code></td>
+                        <td>جلب فاتورة بالـ ID</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-post">POST</span></td>
+                        <td><code class="endpoint-path">/api/v2/invoices</code></td>
+                        <td>إنشاء فاتورة جديدة</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>مثال: إنشاء فاتورة</h4>
+            <div class="code-block">
+curl -X POST "{{ request.host_url }}api/v2/invoices" \
+     -H "X-API-KEY: your_api_key" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "invoice_type": "installment",
+       "customer_id": 1,
+       "items": [
+         {"product_id": 1, "quantity": 1, "price": 15000}
+       ],
+       "paid_amount": 3000,
+       "installment_months": 12
+     }'
+            </div>
+        </div>
+    </div>
+    
+    <!-- الأقساط -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">payments</span>
+            الأقساط (Installments)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/installments</code></td>
+                        <td>جلب جميع الأقساط</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/installments/{id}</code></td>
+                        <td>جلب قسط بالـ ID</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/installments/today</code></td>
+                        <td>أقساط اليوم</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/installments/overdue</code></td>
+                        <td>الأقساط المتأخرة</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-post">POST</span></td>
+                        <td><code class="endpoint-path">/api/v2/installments/{id}/pay</code></td>
+                        <td>تسجيل دفعة</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>مثال: تسجيل دفعة</h4>
+            <div class="code-block">
+curl -X POST "{{ request.host_url }}api/v2/installments/1/pay" \
+     -H "X-API-KEY: your_api_key" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "amount": 1000,
+       "payment_method": "cash"
+     }'
+            </div>
+        </div>
+    </div>
+    
+    <!-- لوحة التحكم -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">dashboard</span>
+            لوحة التحكم (Dashboard)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>الوصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/dashboard/stats</code></td>
+                        <td>إحصائيات لوحة التحكم</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/dashboard/summary</code></td>
+                        <td>ملخص لوحة التحكم</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-get">GET</span></td>
+                        <td><code class="endpoint-path">/api/v2/search?q=query</code></td>
+                        <td>بحث شامل</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- أكواد الحالة -->
+    <div class="api-section">
+        <h2>
+            <span class="material-icons-round">info</span>
+            أكواد الحالة (Status Codes)
+        </h2>
+        <div class="api-content">
+            <table class="endpoint-table status-table">
+                <tbody>
+                    <tr>
+                        <td><span class="method-badge method-get">200</span></td>
+                        <td>نجاح - تم تنفيذ الطلب بنجاح</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-post">201</span></td>
+                        <td>تم الإنشاء - تم إنشاء المورد بنجاح</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-put">400</span></td>
+                        <td>طلب غير صالح - البيانات المرسلة غير صحيحة</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-delete">401</span></td>
+                        <td>غير مصرح - مفتاح API غير صالح أو مفقود</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-put">404</span></td>
+                        <td>غير موجود - المورد المطلوب غير موجود</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-badge method-delete">500</span></td>
+                        <td>خطأ في السيرفر - حدث خطأ داخلي</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>شكل الاستجابة</h4>
+            <div class="code-block">
+{
+  "success": true,
+  "data": { ... },
+  "message": "رسالة النجاح",
+  "pagination": {
+    "total": 100,
+    "page": 1,
+    "per_page": 20,
+    "total_pages": 5
+  }
+}
+            </div>
+            
+            <h4>شكل الخطأ</h4>
+            <div class="code-block">
+{
+  "success": false,
+  "error": "وصف الخطأ"
+}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyBaseUrl() {
+    const url = document.getElementById('baseUrl').textContent;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('تم نسخ الرابط', 'success');
+    });
+}
+</script>
+{% endblock %}

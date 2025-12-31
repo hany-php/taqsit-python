@@ -1,0 +1,108 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="installments-calendar">
+    <div class="calendar-header">
+        <a href="?month={{ month - 1 if month > 1 else 12 }}&year={{ year if month > 1 else year - 1 }}" class="btn btn-secondary">
+            <span class="material-icons-round">chevron_right</span>
+        </a>
+        <h3>{{ ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'][month] }} {{ year }}</h3>
+        <a href="?month={{ month + 1 if month < 12 else 1 }}&year={{ year if month < 12 else year + 1 }}" class="btn btn-secondary">
+            <span class="material-icons-round">chevron_left</span>
+        </a>
+    </div>
+    
+    <div class="calendar-grid">
+        {% for day in range(1, days_in_month + 1) %}
+        <div class="calendar-day {% if calendar_data.get(day) %}has-installments{% endif %}">
+            <span class="day-number">{{ day }}</span>
+            {% if calendar_data.get(day) %}
+            <div class="day-installments">
+                {% for inst in calendar_data[day][:3] %}
+                <div class="installment-item">
+                    <span>{{ inst.invoice.customer.full_name if inst.invoice and inst.invoice.customer else '-' }}</span>
+                    <span class="amount">{{ format_money(inst.remaining_amount or inst.amount) }}</span>
+                </div>
+                {% endfor %}
+                {% if calendar_data[day] | length > 3 %}
+                <div class="more">+{{ calendar_data[day] | length - 3 }} أخرى</div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 25px;
+}
+
+.calendar-header h3 {
+    font-size: 22px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.calendar-day {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 100px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.calendar-day.has-installments {
+    border: 2px solid var(--primary);
+}
+
+.day-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.installment-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.installment-item .amount {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.more {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding-top: 5px;
+}
+
+@media (max-width: 992px) {
+    .calendar-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}

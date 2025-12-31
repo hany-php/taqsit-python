@@ -1,0 +1,261 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<a href="{{ url_for('invoices.print_invoice', id=invoice.id) }}" class="btn btn-primary" target="_blank">
+    <span class="material-icons-round">print</span>
+    طباعة
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-details">
+    <!-- معلومات الفاتورة -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">receipt</span> معلومات الفاتورة</h3>
+            <span class="badge badge-{{ 'success' if invoice.status == 'completed' else 'warning' if invoice.status == 'active' else 'danger' }}">
+                {{ invoice_status(invoice.status) }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">رقم الفاتورة</span>
+                    <span class="detail-value">{{ invoice.invoice_number }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">النوع</span>
+                    <span class="badge badge-{{ 'success' if invoice.invoice_type == 'cash' else 'primary' }}">
+                        {{ invoice_type(invoice.invoice_type) }}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">العميل</span>
+                    <span class="detail-value">
+                        {% if invoice.customer %}
+                        <a href="{{ url_for('customers.show', id=invoice.customer.id) }}">{{ invoice.customer.full_name }}</a>
+                        {% else %}
+                        عميل نقدي
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">الموظف</span>
+                    <span class="detail-value">{{ invoice.user.full_name if invoice.user else '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">إجمالي الفاتورة</span>
+                    <span class="detail-value text-primary" style="font-size: 20px;">{{ format_money(invoice.total_amount) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">المدفوع</span>
+                    <span class="detail-value text-success">{{ format_money(invoice.paid_amount) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">المتبقي</span>
+                    <span class="detail-value text-danger">{{ format_money(invoice.remaining_amount) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">التاريخ</span>
+                    <span class="detail-value">{{ format_datetime(invoice.created_at) }}</span>
+                </div>
+                {% if invoice.invoice_type == 'installment' %}
+                <div class="detail-item">
+                    <span class="detail-label">الدفعة المقدمة</span>
+                    <span class="detail-value">{{ format_money(invoice.down_payment) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">القسط الشهري</span>
+                    <span class="detail-value">{{ format_money(invoice.monthly_installment) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">عدد الأقساط</span>
+                    <span class="detail-value">{{ invoice.installment_months }} شهر</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- بنود الفاتورة -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">inventory</span> بنود الفاتورة</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المنتج</th>
+                        <th>الكمية</th>
+                        <th>سعر الوحدة</th>
+                        <th>الإجمالي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ format_money(item.unit_price) }}</td>
+                        <td>{{ format_money(item.total_price) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="text-align: left;"><strong>الإجمالي</strong></td>
+                        <td><strong>{{ format_money(invoice.total_amount) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    {% if invoice.invoice_type == 'installment' %}
+    <!-- الأقساط -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">payments</span> جدول الأقساط</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>تاريخ الاستحقاق</th>
+                        <th>المبلغ</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>الحالة</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in invoice.installments %}
+                    <tr>
+                        <td>{{ inst.installment_number }}</td>
+                        <td>{{ format_date(inst.due_date) }}</td>
+                        <td>{{ format_money(inst.amount) }}</td>
+                        <td class="text-success">{{ format_money(inst.paid_amount) }}</td>
+                        <td class="text-danger">{{ format_money(inst.remaining_amount) }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if inst.status == 'paid' else 'danger' if inst.status == 'overdue' else 'warning' }}">
+                                {{ installment_status(inst.status) }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if inst.status != 'paid' %}
+                            <button class="btn btn-sm btn-success" onclick="payInstallment({{ inst.id }}, {{ inst.remaining_amount or inst.amount }})">
+                                <span class="material-icons-round">payment</span>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- المدفوعات -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">account_balance_wallet</span> سجل المدفوعات</h3>
+        </div>
+        <div class="card-body">
+            {% if invoice.payments.count() > 0 %}
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>رقم الإيصال</th>
+                        <th>المبلغ</th>
+                        <th>التاريخ</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pay in invoice.payments %}
+                    <tr>
+                        <td>{{ pay.receipt_number }}</td>
+                        <td>{{ format_money(pay.amount) }}</td>
+                        <td>{{ format_datetime(pay.payment_date) }}</td>
+                        <td>{{ pay.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-message">لا توجد مدفوعات</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal دفع قسط -->
+<div class="modal" id="payModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>دفع قسط</h3>
+            <button class="close-modal" onclick="closeModal('payModal')">&times;</button>
+        </div>
+        <form id="payForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>المبلغ</label>
+                    <input type="number" name="amount" id="payAmount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات</label>
+                    <textarea name="notes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('payModal')">إلغاء</button>
+                <button type="submit" class="btn btn-success">تأكيد الدفع</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function payInstallment(id, amount) {
+    document.getElementById('payForm').action = '/installments/' + id + '/pay';
+    document.getElementById('payAmount').value = amount;
+    document.getElementById('payAmount').max = amount;
+    openModal('payModal');
+}
+
+document.getElementById('payForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', data.message);
+            closeModal('payModal');
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+});
+</script>
+{% endblock %}

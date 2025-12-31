@@ -1,0 +1,288 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="dashboard-stats">
+    <!-- إحصائيات اليوم -->
+    <div class="stats-grid">
+        <div class="stat-card stat-success">
+            <div class="stat-icon">
+                <span class="material-icons-round">point_of_sale</span>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label">مبيعات نقدية</span>
+                <span class="stat-value">{{ format_money(today_stats.cash_total) }}</span>
+                <span class="stat-sub">{{ today_stats.cash_count }} فاتورة</span>
+            </div>
+        </div>
+        
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">
+                <span class="material-icons-round">payments</span>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label">مبيعات تقسيط</span>
+                <span class="stat-value">{{ format_money(today_stats.installment_total) }}</span>
+                <span class="stat-sub">{{ today_stats.installment_count }} فاتورة</span>
+            </div>
+        </div>
+        
+        <div class="stat-card stat-info">
+            <div class="stat-icon">
+                <span class="material-icons-round">account_balance_wallet</span>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label">تحصيل اليوم</span>
+                <span class="stat-value">{{ format_money(today_payments) }}</span>
+                <span class="stat-sub">إجمالي المدفوعات</span>
+            </div>
+        </div>
+        
+        <div class="stat-card stat-danger">
+            <div class="stat-icon">
+                <span class="material-icons-round">warning</span>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label">أقساط متأخرة</span>
+                <span class="stat-value">{{ format_money(installment_stats.overdue_amount) }}</span>
+                <span class="stat-sub">{{ installment_stats.overdue_count }} قسط</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- إحصائيات عامة -->
+    <div class="quick-stats">
+        <div class="quick-stat">
+            <span class="material-icons-round">inventory_2</span>
+            <div>
+                <span class="quick-stat-value">{{ stats.products_count }}</span>
+                <span class="quick-stat-label">منتج</span>
+            </div>
+        </div>
+        <div class="quick-stat">
+            <span class="material-icons-round">people</span>
+            <div>
+                <span class="quick-stat-value">{{ stats.customers_count }}</span>
+                <span class="quick-stat-label">عميل</span>
+            </div>
+        </div>
+        <div class="quick-stat">
+            <span class="material-icons-round">description</span>
+            <div>
+                <span class="quick-stat-value">{{ stats.active_installments }}</span>
+                <span class="quick-stat-label">عقد نشط</span>
+            </div>
+        </div>
+        <div class="quick-stat warning">
+            <span class="material-icons-round">error_outline</span>
+            <div>
+                <span class="quick-stat-value">{{ stats.low_stock_count }}</span>
+                <span class="quick-stat-label">منتج منخفض</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- أقساط اليوم -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">today</span> أقساط اليوم</h3>
+            <a href="{{ url_for('installments.today') }}" class="btn-link">عرض الكل</a>
+        </div>
+        <div class="card-body">
+            {% if today_installments %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                            <th>الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inst in today_installments[:5] %}
+                        <tr>
+                            <td>{{ inst.invoice.customer.full_name if inst.invoice and inst.invoice.customer else '-' }}</td>
+                            <td>{{ format_money(inst.remaining_amount or inst.amount) }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="payInstallment({{ inst.id }}, {{ inst.remaining_amount or inst.amount }})">
+                                    <span class="material-icons-round">payment</span>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-message">لا توجد أقساط مستحقة اليوم</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- الأقساط المتأخرة -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">warning</span> أقساط متأخرة</h3>
+            <a href="{{ url_for('installments.overdue') }}" class="btn-link">عرض الكل</a>
+        </div>
+        <div class="card-body">
+            {% if overdue_installments %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                            <th>التأخير</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inst in overdue_installments %}
+                        <tr>
+                            <td>{{ inst.invoice.customer.full_name if inst.invoice and inst.invoice.customer else '-' }}</td>
+                            <td>{{ format_money(inst.remaining_amount or inst.amount) }}</td>
+                            <td class="text-danger">{{ inst.days_overdue }} يوم</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-message">لا توجد أقساط متأخرة</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- آخر الفواتير -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">receipt</span> آخر الفواتير</h3>
+            <a href="{{ url_for('invoices.index') }}" class="btn-link">عرض الكل</a>
+        </div>
+        <div class="card-body">
+            {% if recent_invoices %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>رقم</th>
+                            <th>المبلغ</th>
+                            <th>النوع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in recent_invoices %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('invoices.show', id=inv.id) }}">{{ inv.invoice_number }}</a>
+                            </td>
+                            <td>{{ format_money(inv.total_amount) }}</td>
+                            <td>
+                                <span class="badge badge-{{ 'success' if inv.invoice_type == 'cash' else 'primary' }}">
+                                    {{ invoice_type(inv.invoice_type) }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-message">لا توجد فواتير</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- آخر المدفوعات -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">payments</span> آخر المدفوعات</h3>
+            <a href="{{ url_for('payments.today') }}" class="btn-link">عرض الكل</a>
+        </div>
+        <div class="card-body">
+            {% if recent_payments %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>الإيصال</th>
+                            <th>المبلغ</th>
+                            <th>الوقت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in recent_payments %}
+                        <tr>
+                            <td>{{ pay.receipt_number }}</td>
+                            <td>{{ format_money(pay.amount) }}</td>
+                            <td>{{ format_datetime(pay.payment_date) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-message">لا توجد مدفوعات اليوم</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal دفع قسط -->
+<div class="modal" id="payModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>دفع قسط</h3>
+            <button class="close-modal" onclick="closeModal('payModal')">&times;</button>
+        </div>
+        <form id="payForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>المبلغ</label>
+                    <input type="number" name="amount" id="payAmount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات</label>
+                    <textarea name="notes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('payModal')">إلغاء</button>
+                <button type="submit" class="btn btn-success">تأكيد الدفع</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function payInstallment(id, amount) {
+    document.getElementById('payForm').action = '/installments/' + id + '/pay';
+    document.getElementById('payAmount').value = amount;
+    document.getElementById('payAmount').max = amount;
+    openModal('payModal');
+}
+
+document.getElementById('payForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', data.message);
+            closeModal('payModal');
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+});
+</script>
+{% endblock %}

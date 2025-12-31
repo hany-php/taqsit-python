@@ -1,0 +1,156 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="stats-grid" style="margin-bottom: 25px;">
+    <div class="stat-card stat-danger">
+        <div class="stat-icon">
+            <span class="material-icons-round">warning</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">إجمالي المتأخرات</span>
+            <span class="stat-value">{{ format_money(total_overdue) }}</span>
+            <span class="stat-sub">{{ installments | length }} قسط متأخر</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if installments %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>العميل</th>
+                    <th>الهاتف</th>
+                    <th>رقم الفاتورة</th>
+                    <th>رقم القسط</th>
+                    <th>المبلغ</th>
+                    <th>تاريخ الاستحقاق</th>
+                    <th>أيام التأخير</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inst in installments %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('customers.show', id=inst.invoice.customer.id) }}">
+                            <strong>{{ inst.invoice.customer.full_name if inst.invoice and inst.invoice.customer else '-' }}</strong>
+                        </a>
+                    </td>
+                    <td>{{ inst.invoice.customer.phone if inst.invoice and inst.invoice.customer else '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('invoices.show', id=inst.invoice.id) }}">{{ inst.invoice.invoice_number }}</a>
+                    </td>
+                    <td>{{ inst.installment_number }}</td>
+                    <td class="text-danger">{{ format_money(inst.remaining_amount or inst.amount) }}</td>
+                    <td>{{ format_date(inst.due_date) }}</td>
+                    <td><span class="badge badge-danger">{{ inst.days_overdue }} يوم</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="payInstallment({{ inst.id }}, {{ inst.remaining_amount or inst.amount }})">
+                            <span class="material-icons-round">payment</span>
+                            دفع
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}" class="page-link">
+                <span class="material-icons-round">chevron_right</span>
+            </a>
+            {% endif %}
+            
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <a href="?page={{ p }}" class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+                {% else %}
+                <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}" class="page-link">
+                <span class="material-icons-round">chevron_left</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">check_circle</span>
+            <h3>لا توجد أقساط متأخرة</h3>
+            <p>جميع العملاء ملتزمون بالسداد</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal دفع قسط -->
+<div class="modal" id="payModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>دفع قسط</h3>
+            <button class="close-modal" onclick="closeModal('payModal')">&times;</button>
+        </div>
+        <form id="payForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>المبلغ</label>
+                    <input type="number" name="amount" id="payAmount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات</label>
+                    <textarea name="notes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('payModal')">إلغاء</button>
+                <button type="submit" class="btn btn-success">تأكيد الدفع</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function payInstallment(id, amount) {
+    document.getElementById('payForm').action = '/installments/' + id + '/pay';
+    document.getElementById('payAmount').value = amount;
+    document.getElementById('payAmount').max = amount;
+    openModal('payModal');
+}
+
+document.getElementById('payForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('success', data.message);
+            closeModal('payModal');
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    } catch (error) {
+        showAlert('error', 'حدث خطأ أثناء العملية');
+    }
+});
+</script>
+{% endblock %}

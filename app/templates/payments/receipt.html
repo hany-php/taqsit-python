@@ -1,0 +1,129 @@
+{% extends 'layouts/master.html' %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-separator">/</span>
+<a href="{{ url_for('payments.index') }}" class="breadcrumb-item">المدفوعات</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ payment.receipt_number }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>تفاصيل الإيصال</h3>
+        <div class="actions">
+            <a href="{{ url_for('payments.print_receipt', id=payment.id) }}" class="btn btn-info" target="_blank">
+                <span class="material-icons-round">print</span>
+                طباعة
+            </a>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="receipt-details">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="detail-group">
+                        <label>رقم الإيصال:</label>
+                        <span class="value">{{ payment.receipt_number }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>تاريخ الدفع:</label>
+                        <span class="value">{{ format_datetime(payment.payment_date) }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>المبلغ:</label>
+                        <span class="value amount">{{ format_money(payment.amount) }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>طريقة الدفع:</label>
+                        <span class="value">{{ payment_method(payment.payment_method) }}</span>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="detail-group">
+                        <label>رقم الفاتورة:</label>
+                        <a href="{{ url_for('invoices.show', id=payment.invoice_id) }}" class="value link">
+                            {{ payment.invoice.invoice_number }}
+                        </a>
+                    </div>
+                    {% if payment.invoice.customer %}
+                    <div class="detail-group">
+                        <label>العميل:</label>
+                        <span class="value">{{ payment.invoice.customer.full_name }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>رقم الهاتف:</label>
+                        <span class="value">{{ payment.invoice.customer.phone }}</span>
+                    </div>
+                    {% endif %}
+                    {% if payment.user %}
+                    <div class="detail-group">
+                        <label>الموظف:</label>
+                        <span class="value">{{ payment.user.full_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if payment.notes %}
+            <div class="detail-group full-width">
+                <label>ملاحظات:</label>
+                <span class="value">{{ payment.notes }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.receipt-details {
+    padding: 20px 0;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+}
+
+.col-md-6 {
+    flex: 1;
+    min-width: 280px;
+}
+
+.detail-group {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.detail-group label {
+    color: var(--muted);
+    font-size: 14px;
+    min-width: 100px;
+}
+
+.detail-group .value {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.detail-group .value.amount {
+    color: var(--success);
+    font-size: 18px;
+}
+
+.detail-group .value.link {
+    color: var(--primary);
+}
+
+.detail-group.full-width {
+    flex-direction: column;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+</style>
+{% endblock %}

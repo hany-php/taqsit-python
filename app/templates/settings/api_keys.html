@@ -1,0 +1,441 @@
+{% extends 'layouts/master.html' %}
+
+{% block styles %}
+<style>
+.api-key-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+}
+
+.api-key-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.api-key-name {
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.api-key-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.api-key-status.active {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.api-key-status.expired {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.api-key-status.disabled {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.api-key-value {
+    background: var(--light);
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    direction: ltr;
+}
+
+.api-key-value .key-text {
+    max-width: calc(100% - 80px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.api-key-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.api-key-details span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.api-key-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.new-key-display {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+}
+
+.new-key-display h3 {
+    margin: 0 0 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.new-key-display .key-value {
+    background: rgba(255,255,255,0.2);
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    word-break: break-all;
+    margin: 15px 0;
+    direction: ltr;
+}
+
+.new-key-display .warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,255,255,0.15);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.empty-keys {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+}
+
+.empty-keys .material-icons-round {
+    font-size: 60px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--danger);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3><span class="material-icons-round">vpn_key</span> إدارة مفاتيح API</h3>
+        <button type="button" class="btn btn-primary" onclick="showCreateModal()">
+            <span class="material-icons-round">add</span>
+            إنشاء مفتاح جديد
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info" style="margin-bottom: 20px;">
+            <span class="material-icons-round">info</span>
+            <div>
+                مفاتيح API تُستخدم للتكامل مع التطبيقات الخارجية. احتفظ بها في مكان آمن ولا تشاركها مع أي شخص.
+                <a href="{{ url_for('settings.api_docs') }}" style="color: inherit; font-weight: 600;">عرض توثيق API</a>
+            </div>
+        </div>
+
+        <!-- عرض المفتاح الجديد -->
+        {% if new_key %}
+        <div class="new-key-display">
+            <h3>
+                <span class="material-icons-round">check_circle</span>
+                تم إنشاء المفتاح بنجاح!
+            </h3>
+            <p>هذا هو مفتاح API الخاص بك. احفظه الآن لأنه لن يظهر مرة أخرى:</p>
+            <div class="key-value" id="newKeyValue">{{ new_key }}</div>
+            <button type="button" class="btn btn-light" onclick="copyNewKey()">
+                <span class="material-icons-round">content_copy</span>
+                نسخ المفتاح
+            </button>
+            <div class="warning">
+                <span class="material-icons-round">warning</span>
+                <span>تأكد من حفظ هذا المفتاح في مكان آمن. لن تتمكن من رؤيته مرة أخرى!</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- قائمة المفاتيح -->
+        {% if api_keys %}
+        {% for key in api_keys %}
+        <div class="api-key-card">
+            <div class="api-key-header">
+                <div class="api-key-name">
+                    <span class="material-icons-round">key</span>
+                    {{ key.name }}
+                </div>
+                <span class="api-key-status {% if key.is_expired %}expired{% elif key.is_active %}active{% else %}disabled{% endif %}">
+                    {% if key.is_expired %}
+                    منتهي
+                    {% elif key.is_active %}
+                    نشط
+                    {% else %}
+                    معطل
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="api-key-value">
+                <span class="key-text">{{ key.key_preview }}</span>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="copyKey('{{ key.api_key }}')">
+                    <span class="material-icons-round">content_copy</span>
+                </button>
+            </div>
+            
+            <div class="api-key-details">
+                <span>
+                    <span class="material-icons-round">calendar_today</span>
+                    أنشئ في: {{ key.created_at.strftime('%Y-%m-%d') }}
+                </span>
+                {% if key.expires_at %}
+                <span>
+                    <span class="material-icons-round">event</span>
+                    ينتهي في: {{ key.expires_at.strftime('%Y-%m-%d') }}
+                </span>
+                {% else %}
+                <span>
+                    <span class="material-icons-round">all_inclusive</span>
+                    لا ينتهي
+                </span>
+                {% endif %}
+                {% if key.last_used_at %}
+                <span>
+                    <span class="material-icons-round">access_time</span>
+                    آخر استخدام: {{ key.last_used_at.strftime('%Y-%m-%d %H:%M') }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="api-key-actions">
+                {% if key.is_active %}
+                <button type="button" class="btn btn-sm btn-warning" onclick="toggleKey({{ key.id }}, false)">
+                    <span class="material-icons-round">pause</span>
+                    تعطيل
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-sm btn-success" onclick="toggleKey({{ key.id }}, true)">
+                    <span class="material-icons-round">play_arrow</span>
+                    تفعيل
+                </button>
+                {% endif %}
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteKey({{ key.id }})">
+                    <span class="material-icons-round">delete</span>
+                    حذف
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-keys">
+            <span class="material-icons-round">vpn_key</span>
+            <h3>لا توجد مفاتيح API</h3>
+            <p>قم بإنشاء مفتاح جديد للبدء في استخدام API</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal إنشاء مفتاح -->
+<div class="modal" id="createModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><span class="material-icons-round">add</span> إنشاء مفتاح API جديد</h3>
+            <button type="button" class="modal-close" onclick="closeModal('createModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('settings.api_key_create') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم المفتاح *</label>
+                    <input type="text" name="name" required placeholder="مثال: تطبيق الموبايل">
+                    <small class="text-muted">اسم وصفي لتمييز هذا المفتاح</small>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الانتهاء (اختياري)</label>
+                    <input type="date" name="expires_at">
+                    <small class="text-muted">اتركه فارغاً إذا كنت تريد المفتاح صالحاً للأبد</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">إلغاء</button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons-round">vpn_key</span>
+                    إنشاء المفتاح
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showCreateModal() {
+    document.getElementById('createModal').classList.add('show');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+function copyNewKey() {
+    const key = document.getElementById('newKeyValue').textContent;
+    navigator.clipboard.writeText(key).then(() => {
+        showToast('تم نسخ المفتاح', 'success');
+    });
+}
+
+function copyKey(key) {
+    navigator.clipboard.writeText(key).then(() => {
+        showToast('تم نسخ المفتاح', 'success');
+    });
+}
+
+function toggleKey(id, activate) {
+    if (confirm(activate ? 'هل تريد تفعيل هذا المفتاح؟' : 'هل تريد تعطيل هذا المفتاح؟')) {
+        fetch(`/settings/api-keys/${id}/toggle`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  location.reload();
+              } else {
+                  showToast(data.message || 'حدث خطأ', 'error');
+              }
+          });
+    }
+}
+
+function deleteKey(id) {
+    if (confirm('هل أنت متأكد من حذف هذا المفتاح؟ لن تتمكن من التراجع عن هذا الإجراء.')) {
+        fetch(`/settings/api-keys/${id}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  location.reload();
+              } else {
+                  showToast(data.message || 'حدث خطأ', 'error');
+              }
+          });
+    }
+}
+
+// إغلاق Modal بالضغط خارجها
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('show');
+        }
+    });
+});
+</script>
+{% endblock %}

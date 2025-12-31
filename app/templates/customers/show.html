@@ -1,0 +1,130 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn btn-primary">
+    <span class="material-icons-round">edit</span>
+    تعديل
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="customer-profile">
+    <!-- معلومات العميل -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">person</span> معلومات العميل</h3>
+            <span class="badge badge-{{ 'danger' if balance > 0 else 'success' }}">
+                رصيد: {{ format_money(balance) }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">الاسم الكامل</span>
+                    <span class="detail-value">{{ customer.full_name }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">رقم الهاتف</span>
+                    <span class="detail-value">{{ customer.phone }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">هاتف آخر</span>
+                    <span class="detail-value">{{ customer.phone2 or '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">الرقم القومي</span>
+                    <span class="detail-value">{{ customer.national_id or '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">المدينة</span>
+                    <span class="detail-value">{{ customer.city or '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">الحد الائتماني</span>
+                    <span class="detail-value">{{ format_money(customer.credit_limit) }}</span>
+                </div>
+                <div class="detail-item full-width">
+                    <span class="detail-label">العنوان</span>
+                    <span class="detail-value">{{ customer.address or '-' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- فواتير العميل -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">receipt</span> الفواتير</h3>
+        </div>
+        <div class="card-body">
+            {% if invoices %}
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                        <th>المتبقي</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                    <tr>
+                        <td><a href="{{ url_for('invoices.show', id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if inv.invoice_type == 'cash' else 'primary' }}">
+                                {{ invoice_type(inv.invoice_type) }}
+                            </span>
+                        </td>
+                        <td>{{ format_money(inv.total_amount) }}</td>
+                        <td class="text-danger">{{ format_money(inv.remaining_amount) }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if inv.status == 'completed' else 'warning' if inv.status == 'active' else 'danger' }}">
+                                {{ invoice_status(inv.status) }}
+                            </span>
+                        </td>
+                        <td>{{ format_date(inv.created_at) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-message">لا توجد فواتير</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- آخر المدفوعات -->
+    <div class="card">
+        <div class="card-header">
+            <h3><span class="material-icons-round">payments</span> آخر المدفوعات</h3>
+        </div>
+        <div class="card-body">
+            {% if payments %}
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>رقم الإيصال</th>
+                        <th>المبلغ</th>
+                        <th>التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pay in payments[:10] %}
+                    <tr>
+                        <td>{{ pay.receipt_number }}</td>
+                        <td>{{ format_money(pay.amount) }}</td>
+                        <td>{{ format_datetime(pay.payment_date) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-message">لا توجد مدفوعات</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

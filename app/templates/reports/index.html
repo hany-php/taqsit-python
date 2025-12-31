@@ -1,0 +1,105 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="reports-grid">
+    <a href="{{ url_for('reports.profits') }}" class="report-card">
+        <div class="report-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span class="material-icons-round">trending_up</span>
+        </div>
+        <div class="report-info">
+            <h3>تقرير الأرباح</h3>
+            <p>عرض أرباح المنتجات والإجماليات</p>
+        </div>
+    </a>
+    
+    <a href="{{ url_for('reports.sales') }}" class="report-card">
+        <div class="report-icon" style="background: linear-gradient(135deg, #1e88e5, #1565c0);">
+            <span class="material-icons-round">point_of_sale</span>
+        </div>
+        <div class="report-info">
+            <h3>تقرير المبيعات</h3>
+            <p>إجمالي المبيعات النقدية والتقسيط</p>
+        </div>
+    </a>
+    
+    <a href="{{ url_for('reports.collections') }}" class="report-card">
+        <div class="report-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+            <span class="material-icons-round">account_balance_wallet</span>
+        </div>
+        <div class="report-info">
+            <h3>تقرير التحصيل</h3>
+            <p>سجل المدفوعات والتحصيلات</p>
+        </div>
+    </a>
+    
+    <a href="{{ url_for('reports.overdue') }}" class="report-card">
+        <div class="report-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+            <span class="material-icons-round">warning</span>
+        </div>
+        <div class="report-info">
+            <h3>تقرير المتأخرات</h3>
+            <p>الأقساط المتأخرة وتفاصيل العملاء</p>
+        </div>
+    </a>
+    
+    <a href="{{ url_for('reports.inventory') }}" class="report-card">
+        <div class="report-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <span class="material-icons-round">inventory</span>
+        </div>
+        <div class="report-info">
+            <h3>تقرير المخزون</h3>
+            <p>حالة المخزون والمنتجات المنخفضة</p>
+        </div>
+    </a>
+</div>
+
+<style>
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.report-card {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.report-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.report-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-icon .material-icons-round {
+    font-size: 28px;
+    color: white;
+}
+
+.report-info h3 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.report-info p {
+    font-size: 14px;
+    color: var(--muted);
+}
+</style>
+{% endblock %}

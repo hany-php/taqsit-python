@@ -1,0 +1,160 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<a href="{{ url_for('products.create') }}" class="btn btn-primary">
+    <span class="material-icons-round">add</span>
+    إضافة منتج
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- فلتر وبحث -->
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="search-input">
+            <span class="material-icons-round">search</span>
+            <input type="text" name="q" value="{{ search }}" placeholder="بحث في المنتجات...">
+        </div>
+        <select name="category" class="form-select">
+            <option value="">كل التصنيفات</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+</div>
+
+<!-- جدول المنتجات -->
+<div class="card">
+    <div class="card-body">
+        {% if products %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>المنتج</th>
+                    <th>التصنيف</th>
+                    <th>السعر النقدي</th>
+                    <th>سعر التقسيط</th>
+                    <th>الكمية</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.id }}</td>
+                    <td>
+                        <div class="product-info">
+                            <strong>{{ product.name }}</strong>
+                            {% if product.barcode %}
+                            <small class="text-muted">{{ product.barcode }}</small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ product.category.name if product.category else '-' }}</td>
+                    <td>{{ format_money(product.cash_price) }}</td>
+                    <td>{{ format_money(product.installment_price) }}</td>
+                    <td>
+                        <span class="{% if product.is_low_stock %}text-danger{% endif %}">
+                            {{ product.quantity }}
+                        </span>
+                        {% if product.is_low_stock %}
+                        <span class="material-icons-round text-danger" style="font-size: 14px">warning</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if product.is_active else 'danger' }}">
+                            {{ 'نشط' if product.is_active else 'معطل' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('products.show', id=product.id) }}" class="btn btn-sm btn-secondary" title="عرض">
+                                <span class="material-icons-round">visibility</span>
+                            </a>
+                            <a href="{{ url_for('products.edit', id=product.id) }}" class="btn btn-sm btn-primary" title="تعديل">
+                                <span class="material-icons-round">edit</span>
+                            </a>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ product.id }}, '{{ product.name }}')" title="حذف">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}&q={{ search }}&category={{ category_id or '' }}" class="page-link">
+                <span class="material-icons-round">chevron_right</span>
+            </a>
+            {% endif %}
+            
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <a href="?page={{ p }}&q={{ search }}&category={{ category_id or '' }}" 
+                   class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+                {% else %}
+                <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}&q={{ search }}&category={{ category_id or '' }}" class="page-link">
+                <span class="material-icons-round">chevron_left</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">inventory_2</span>
+            <h3>لا توجد منتجات</h3>
+            <p>ابدأ بإضافة منتجاتك الأولى</p>
+            <a href="{{ url_for('products.create') }}" class="btn btn-primary">
+                <span class="material-icons-round">add</span>
+                إضافة منتج
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal تأكيد الحذف -->
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>تأكيد الحذف</h3>
+            <button class="close-modal" onclick="closeModal('deleteModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>هل أنت متأكد من حذف المنتج <strong id="deleteProductName"></strong>؟</p>
+            <p class="text-danger">هذا الإجراء لا يمكن التراجع عنه.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">إلغاء</button>
+            <form id="deleteForm" method="POST" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">حذف</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(id, name) {
+    document.getElementById('deleteProductName').textContent = name;
+    document.getElementById('deleteForm').action = '/products/' + id + '/delete';
+    openModal('deleteModal');
+}
+</script>
+{% endblock %}

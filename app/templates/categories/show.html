@@ -1,0 +1,53 @@
+{% extends 'layouts/master.html' %}
+
+{% block header_actions %}
+<a href="{{ url_for('products.index') }}" class="btn btn-secondary">
+    <span class="material-icons-round">arrow_back</span>
+    الرجوع
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3><span class="material-icons-round">category</span> منتجات التصنيف: {{ category.name }}</h3>
+        <span class="badge badge-primary">{{ products | length }} منتج</span>
+    </div>
+    <div class="card-body">
+        {% if products %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>المنتج</th>
+                    <th>السعر النقدي</th>
+                    <th>سعر التقسيط</th>
+                    <th>الكمية</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.id }}</td>
+                    <td><strong>{{ product.name }}</strong></td>
+                    <td>{{ format_money(product.cash_price) }}</td>
+                    <td>{{ format_money(product.installment_price) }}</td>
+                    <td>{{ product.quantity }}</td>
+                    <td>
+                        <a href="{{ url_for('products.show', id=product.id) }}" class="btn btn-sm btn-secondary">عرض</a>
+                        <a href="{{ url_for('products.edit', id=product.id) }}" class="btn btn-sm btn-primary">تعديل</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">inventory_2</span>
+            <h3>لا توجد منتجات في هذا التصنيف</h3>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e88e5">
+    <meta name="description" content="نظام إدارة مبيعات التقسيط">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="تقسيط">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#1e88e5">
+    <meta name="msapplication-TileImage" content="{{ url_for('static', filename='icons/icon-144x144.png') }}">
+    
+    <title>{% block title %}{{ page_title | default('نظام تقسيط') }}{% endblock %} - {{ app_name }}</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-96x96.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='icons/icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='icons/icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='icons/icon-128x128.png') }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- PWA Install Banner Styles -->
+    <style>
+        .pwa-install-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 9999;
+            animation: slideUp 0.3s ease;
+        }
+        
+        .pwa-install-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .pwa-install-banner .pwa-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pwa-install-banner .pwa-content {
+            flex: 1;
+        }
+        
+        .pwa-install-banner .pwa-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+        
+        .pwa-install-banner .pwa-subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .pwa-install-banner .pwa-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .pwa-install-banner .pwa-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        .pwa-install-banner .pwa-btn-install {
+            background: white;
+            color: #1e88e5;
+        }
+        
+        .pwa-install-banner .pwa-btn-close {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        /* Offline indicator */
+        .offline-indicator {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            z-index: 10000;
+        }
+        
+        .offline-indicator.show {
+            display: block;
+        }
+        
+        @media (max-width: 576px) {
+            .pwa-install-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .pwa-install-banner .pwa-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+    
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Offline Indicator -->
+    <div class="offline-indicator" id="offlineIndicator">
+        <span class="material-icons-round" style="font-size: 16px; vertical-align: middle;">wifi_off</span>
+        أنت غير متصل بالإنترنت
+    </div>
+    
+    <!-- PWA Install Banner -->
+    <div class="pwa-install-banner" id="pwaInstallBanner">
+        <div class="pwa-icon">
+            <span class="material-icons-round">get_app</span>
+        </div>
+        <div class="pwa-content">
+            <div class="pwa-title">تثبيت التطبيق</div>
+            <div class="pwa-subtitle">أضف نظام تقسيط لشاشتك الرئيسية</div>
+        </div>
+        <div class="pwa-actions">
+            <button class="pwa-btn pwa-btn-install" id="pwaInstallBtn">تثبيت</button>
+            <button class="pwa-btn pwa-btn-close" id="pwaCloseBtn">لاحقاً</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="material-icons-round">store</span>
+                    <span class="logo-text">{{ settings.get('store_name', 'نظام تقسيط') }}</span>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <span class="material-icons-round">menu</span>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    <span class="material-icons-round">dashboard</span>
+                    <span>لوحة التحكم</span>
+                </a>
+
+                <a href="{{ url_for('invoices.pos') }}" class="nav-link {% if 'pos' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">point_of_sale</span>
+                    <span>نقطة البيع</span>
+                </a>
+
+                <a href="{{ url_for('products.index') }}" class="nav-link {% if 'products' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">inventory_2</span>
+                    <span>المنتجات</span>
+                </a>
+
+                <a href="{{ url_for('categories.index') }}" class="nav-link {% if 'categories' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">category</span>
+                    <span>التصنيفات</span>
+                </a>
+
+                <a href="{{ url_for('customers.index') }}" class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">people</span>
+                    <span>العملاء</span>
+                </a>
+
+                <a href="{{ url_for('invoices.index') }}" class="nav-link {% if request.endpoint == 'invoices.index' %}active{% endif %}">
+                    <span class="material-icons-round">receipt_long</span>
+                    <span>الفواتير</span>
+                </a>
+
+                <a href="{{ url_for('installments.index') }}" class="nav-link {% if 'installments' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">payments</span>
+                    <span>الأقساط</span>
+                </a>
+
+                <a href="{{ url_for('payments.index') }}" class="nav-link {% if 'payments' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">account_balance_wallet</span>
+                    <span>المدفوعات</span>
+                </a>
+
+                <a href="{{ url_for('reports.index') }}" class="nav-link {% if 'reports' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">analytics</span>
+                    <span>التقارير</span>
+                </a>
+
+                {% if current_user.role == 'admin' %}
+                <div class="nav-divider"></div>
+
+                <a href="{{ url_for('users.index') }}" class="nav-link {% if 'users' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">manage_accounts</span>
+                    <span>المستخدمين</span>
+                </a>
+
+                <a href="{{ url_for('settings.index') }}" class="nav-link {% if 'settings' in request.endpoint %}active{% endif %}">
+                    <span class="material-icons-round">settings</span>
+                    <span>الإعدادات</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <span class="material-icons-round">account_circle</span>
+                    <div class="user-details">
+                        <span class="user-name">{{ current_user.full_name }}</span>
+                        <span class="user-role">{{ current_user.get_role_label() }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="تسجيل الخروج">
+                    <span class="material-icons-round">logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <button type="button" class="menu-toggle" onclick="toggleSidebar()">
+                    <span class="material-icons-round">menu</span>
+                </button>
+
+                <div class="page-header-content">
+                    <!-- Breadcrumb -->
+                    <nav class="breadcrumb" aria-label="breadcrumb">
+                        <a href="{{ url_for('dashboard.index') }}" class="breadcrumb-item">
+                            <span class="material-icons-round">home</span>
+                        </a>
+                        {% block breadcrumb %}
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active">{{ page_title }}</span>
+                        {% endblock %}
+                    </nav>
+                    <h1 class="page-title">{{ page_title }}</h1>
+                </div>
+
+                <div class="top-bar-actions">
+                    <!-- Back Button -->
+                    <button type="button" class="btn btn-secondary btn-back" onclick="goBack()" title="رجوع">
+                        <span class="material-icons-round">arrow_forward</span>
+                    </button>
+                    {% block header_actions %}{% endblock %}
+                </div>
+            </header>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <span class="material-icons-round">
+                        {% if category == 'success' %}check_circle
+                        {% elif category == 'error' %}error
+                        {% elif category == 'warning' %}warning
+                        {% else %}info{% endif %}
+                    </span>
+                    {{ message }}
+                    <button class="close-btn" onclick="this.parentElement.remove()">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- Page Content -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Go Back Function (inline to avoid cache issues)
+        function goBack() {
+            if (document.referrer && document.referrer.includes(window.location.host)) {
+                history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ range(1000, 9999) | random }}"></script>
+    
+    <!-- PWA Script -->
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registered:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBanner = document.getElementById('pwaInstallBanner');
+        const installBtn = document.getElementById('pwaInstallBtn');
+        const closeBtn = document.getElementById('pwaCloseBtn');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Check if user dismissed before
+            if (!sessionStorage.getItem('pwa-dismissed')) {
+                installBanner.classList.add('show');
+            }
+        });
+        
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('PWA installed');
+            }
+            
+            deferredPrompt = null;
+            installBanner.classList.remove('show');
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+            sessionStorage.setItem('pwa-dismissed', 'true');
+        });
+        
+        // Offline detection
+        const offlineIndicator = document.getElementById('offlineIndicator');
+        
+        window.addEventListener('online', () => {
+            offlineIndicator.classList.remove('show');
+        });
+        
+        window.addEventListener('offline', () => {
+            offlineIndicator.classList.add('show');
+        });
+        
+        if (!navigator.onLine) {
+            offlineIndicator.classList.add('show');
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

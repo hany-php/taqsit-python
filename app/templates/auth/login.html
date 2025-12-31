@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="نظام إدارة مبيعات التقسيط">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="تقسيط">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#1e3a5f">
+    
+    <title>تسجيل الدخول - {{ app_name }}</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-96x96.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .login-header .logo .material-icons-round {
+            font-size: 40px;
+            color: white;
+        }
+        
+        .login-header h1 {
+            font-size: 24px;
+            color: #1e3a5f;
+            font-weight: 700;
+        }
+        
+        .login-header p {
+            color: #64748b;
+            margin-top: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #334155;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-wrapper .material-icons-round {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 45px 14px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
+        }
+        
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .remember-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #1e88e5;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 136, 229, 0.3);
+        }
+        
+        .alert {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        /* PWA Install Banner */
+        .pwa-install-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 9999;
+            animation: slideUp 0.3s ease;
+        }
+        
+        .pwa-install-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .pwa-install-banner .pwa-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .pwa-install-banner .pwa-content {
+            flex: 1;
+        }
+        
+        .pwa-install-banner .pwa-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+        
+        .pwa-install-banner .pwa-subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .pwa-install-banner .pwa-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .pwa-install-banner .pwa-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        .pwa-install-banner .pwa-btn-install {
+            background: white;
+            color: #1e88e5;
+        }
+        
+        .pwa-install-banner .pwa-btn-close {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .login-container {
+                padding: 30px 25px;
+            }
+            
+            .login-header .logo {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .login-header .logo .material-icons-round {
+                font-size: 35px;
+            }
+            
+            .login-header h1 {
+                font-size: 22px;
+            }
+            
+            .pwa-install-banner {
+                flex-direction: column;
+                text-align: center;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            
+            .pwa-install-banner .pwa-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- PWA Install Banner -->
+    <div class="pwa-install-banner" id="pwaInstallBanner">
+        <div class="pwa-icon">
+            <span class="material-icons-round">get_app</span>
+        </div>
+        <div class="pwa-content">
+            <div class="pwa-title">تثبيت التطبيق</div>
+            <div class="pwa-subtitle">أضف نظام تقسيط لشاشتك الرئيسية</div>
+        </div>
+        <div class="pwa-actions">
+            <button type="button" class="pwa-btn pwa-btn-install" id="pwaInstallBtn">تثبيت</button>
+            <button type="button" class="pwa-btn pwa-btn-close" id="pwaCloseBtn">لاحقاً</button>
+        </div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <span class="material-icons-round">store</span>
+            </div>
+            <h1>{{ app_name }}</h1>
+            <p>نظام إدارة مبيعات التقسيط</p>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <span class="material-icons-round">
+                            {% if category == 'success' %}check_circle{% else %}error{% endif %}
+                        </span>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label>اسم المستخدم</label>
+                <div class="input-wrapper">
+                    <span class="material-icons-round">person</span>
+                    <input type="text" name="username" placeholder="أدخل اسم المستخدم" required autofocus>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <div class="input-wrapper">
+                    <span class="material-icons-round">lock</span>
+                    <input type="password" name="password" placeholder="أدخل كلمة المرور" required>
+                </div>
+            </div>
+            
+            <div class="remember-row">
+                <input type="checkbox" name="remember" id="remember">
+                <label for="remember">تذكرني</label>
+            </div>
+            
+            <button type="submit" class="btn-login">
+                <span class="material-icons-round">login</span>
+                تسجيل الدخول
+            </button>
+        </form>
+    </div>
+    
+    <!-- PWA Script -->
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registered:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBanner = document.getElementById('pwaInstallBanner');
+        const installBtn = document.getElementById('pwaInstallBtn');
+        const closeBtn = document.getElementById('pwaCloseBtn');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Check if user dismissed before
+            if (!sessionStorage.getItem('pwa-dismissed')) {
+                installBanner.classList.add('show');
+            }
+        });
+        
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('PWA installed');
+            }
+            
+            deferredPrompt = null;
+            installBanner.classList.remove('show');
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+            sessionStorage.setItem('pwa-dismissed', 'true');
+        });
+    </script>
+</body>
+</html>

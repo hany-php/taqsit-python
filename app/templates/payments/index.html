@@ -1,0 +1,99 @@
+{% extends 'layouts/master.html' %}
+
+{% block content %}
+<div class="filter-bar">
+    <form class="search-form" method="GET">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label style="margin-left: 10px;">من</label>
+            <input type="date" name="from" value="{{ from_date }}" class="form-control">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label style="margin-left: 10px;">إلى</label>
+            <input type="date" name="to" value="{{ to_date }}" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+</div>
+
+<div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card stat-success">
+        <div class="stat-icon">
+            <span class="material-icons-round">account_balance_wallet</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">إجمالي المدفوعات</span>
+            <span class="stat-value">{{ format_money(total) }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if payments %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>رقم الإيصال</th>
+                    <th>الفاتورة</th>
+                    <th>العميل</th>
+                    <th>المبلغ</th>
+                    <th>طريقة الدفع</th>
+                    <th>التاريخ</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pay in payments %}
+                <tr>
+                    <td>{{ pay.receipt_number }}</td>
+                    <td>
+                        <a href="{{ url_for('invoices.show', id=pay.invoice.id) }}">{{ pay.invoice.invoice_number }}</a>
+                    </td>
+                    <td>{{ pay.invoice.customer.full_name if pay.invoice and pay.invoice.customer else '-' }}</td>
+                    <td class="text-success">{{ format_money(pay.amount) }}</td>
+                    <td>{{ payment_method(pay.payment_method) }}</td>
+                    <td>{{ format_datetime(pay.payment_date) }}</td>
+                    <td>
+                        <a href="{{ url_for('payments.receipt', id=pay.id) }}" class="btn btn-sm btn-secondary" target="_blank">
+                            <span class="material-icons-round">receipt</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}&from={{ from_date }}&to={{ to_date }}" class="page-link">
+                <span class="material-icons-round">chevron_right</span>
+            </a>
+            {% endif %}
+            
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <a href="?page={{ p }}&from={{ from_date }}&to={{ to_date }}" 
+                   class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+                {% else %}
+                <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}&from={{ from_date }}&to={{ to_date }}" class="page-link">
+                <span class="material-icons-round">chevron_left</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <span class="material-icons-round">account_balance_wallet</span>
+            <h3>لا توجد مدفوعات</h3>
+            <p>لا توجد مدفوعات في الفترة المحددة</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

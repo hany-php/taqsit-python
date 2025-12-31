@@ -335,7 +335,7 @@ CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "run:app"]
 
 ## 📞 الدعم
 
-- 📧 البريد الإلكتروني: support@example.com
+- 📧 البريد الإلكتروني: hany.hassan.hany@gmail.com
 - 🐛 الإبلاغ عن مشكلة: [GitHub Issues](https://github.com/hany-php/taqsit-python/issues)
 
 ---
